@@ -1,0 +1,3565 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <!-- ================================================================
+       HARD REDIRECT LOOP BREAKER
+  ================================================================ -->
+  <script>
+    (function() {
+      try {
+        var now = Date.now();
+        var raw = sessionStorage.getItem('_hard_loop_guard');
+        var loads = raw ? JSON.parse(raw) : [];
+        loads = loads.filter(function(t) { return now - t < 2500; });
+        loads.push(now);
+        sessionStorage.setItem('_hard_loop_guard', JSON.stringify(loads));
+        if (loads.length >= 3) {
+          localStorage.clear();
+          sessionStorage.clear();
+          document.write('<div style="padding:50px;font-family:sans-serif;color:white;background:#1a1a1a;height:100vh;">' +
+            '<h2>Loop Detected & Blocked!</h2>' +
+            '<p>Your browser had corrupted login data which caused an infinite redirect loop.</p>' +
+            '<p>We have cleared the corrupted data.</p>' +
+            '<a href="index.html" style="color:#c49a3c;font-size:18px;text-decoration:underline;">Click here to return to the homepage</a>' +
+            '</div>');
+          window.stop();
+        }
+      } catch(e) {}
+    })();
+  </script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard  Halden's Event Management &amp; Catering</title>
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+
+
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+ 
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+ 
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+<meta name="description" content="Track your reservations, meetings, payments, and event progress with Halden's Customer Portal." />
+  
+    <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth-prompt-styles.css" />
+  <!-- Leaflet Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- FOUC prevention -->
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('halden_theme') || 'dark');</script>
+  <!-- Mark this as the customer page so app.js skips index-only init -->
+  <script>window.CUSTOMER_PAGE = true;</script>
+
+  <style>
+    /* Global Typography matching admin.html */
+    *, body, button, input, select, textarea, div, p, span, a, label, th, td,
+    .cp-nav-item, .cp-card, .cp-user-name, .cp-user-email, .cp-field label, .cp-table {
+      font-family: 'DM Sans', sans-serif !important;
+    }
+    h1, h2, h3, h4, h5, h6, .cp-hdr-title, .cp-card-title, .cp-stat-val, .cp-dash-hero-title, .cp-sec-title, .brand-text {
+      font-family: 'Playfair Display', serif !important;
+    }
+    /* ============================================================
+       CUSTOMER PORTAL REDESIGN  Hal'Serve warm-cream aesthetic
+       ============================================================ */
+    /* Dark mode calendar meeting & event text color fix */
+    [data-theme="dark"] .fc-event,
+    [data-theme="dark"] .fc-event *,
+    [data-theme="dark"] .fc-event-title,
+    [data-theme="dark"] .fc-event-time,
+    [data-theme="dark"] #customer-calendar .fc-event,
+    [data-theme="dark"] #customer-calendar .fc-event * {
+      color: #ffffff !important;
+    }
+    @media (max-width: 768px) {
+      [data-theme="dark"] .fc-event,
+      [data-theme="dark"] .fc-event *,
+      [data-theme="dark"] #customer-calendar .fc-event,
+      [data-theme="dark"] #customer-calendar .fc-event * {
+        color: #ffffff !important;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100% !important;
+      min-height: 100vh !important;
+      min-height: 100dvh !important;
+      background: var(--cp-bg, #faf8f4) !important;
+      color: var(--cp-text, #111827);
+      overflow: hidden;
+      margin: 0 !important;
+      padding: 0 !important;
+      padding-top: 0 !important;
+    }
+    #dash-overlay,
+    .cp-layout,
+    .cp-main {
+      background: var(--cp-bg, #faf8f4) !important;
+      min-height: 100% !important;
+    }
+    .cp-scroll {
+      background: var(--cp-bg, #faf8f4) !important;
+    }
+
+    /* ---- Design Tokens ---- */
+    :root {
+      --cp-bg:        #faf8f4;
+      --cp-bg2:       #f0ebe0;
+      --cp-bg3:       #e8e0d0;
+      --cp-sidebar:   #ffffff;
+      --cp-card:      #ffffff;
+      --cp-border:    rgba(180,155,110,0.28);
+      --cp-border-s:  rgba(180,155,110,0.5);
+      --cp-gold:      #b8860b;
+      --cp-gold-btn:  #c49a3c;
+      --cp-text:      #111827;
+      --cp-cream:     #111827;
+      --cp-text-mid:  #374151;
+      --cp-text-dim:  #4b5563;
+      --cp-green:     #2d8a4e;
+      --cp-red:       #c0392b;
+      --cp-shadow:    0 2px 16px rgba(44,26,14,0.07);
+      --cp-shadow-md: 0 8px 32px rgba(44,26,14,0.10);
+      --cp-shadow-lg: 0 16px 56px rgba(44,26,14,0.14);
+      --cp-radius:    18px;
+      --cp-sidebar-w: 254px;
+      
+      /* Aliases for shared app.js UI */
+      --cream:        var(--cp-text);
+      --text:         var(--cp-text);
+      --text-mid:     var(--cp-text-mid);
+      --text-dim:     var(--cp-text-dim);
+      --bg:           var(--cp-bg);
+      --bg2:          var(--cp-bg2);
+      --bg3:          var(--cp-bg3);
+      --border:       var(--cp-border);
+      --gold:         var(--cp-gold);
+      --gold-bg:      rgba(184,134,11,0.12);
+      --green:        #2d8a4e;
+      --amber:        #b45309;
+      --red:          #c0392b;
+      --red-bg:       rgba(192,57,43,0.10);
+      --panel-bg:     var(--cp-bg2);
+    }
+    [data-theme="dark"] {
+      --cp-bg:        #130e06;
+      --cp-bg2:       #1c1508;
+      --cp-bg3:       #261d0d;
+      --cp-sidebar:   #191109;
+      --cp-card:      #191109;
+      --cp-border:    rgba(196,154,60,0.15);
+      --cp-border-s:  rgba(196,154,60,0.30);
+      --cp-text:      #f0e6d3;
+      --cp-cream:     #f0e6d3;
+      --cp-text-mid:  #c4a87a;
+      --cp-text-dim:  #8a7055;
+      --cp-shadow:    0 2px 16px rgba(0,0,0,0.35);
+      --cp-shadow-md: 0 8px 32px rgba(0,0,0,0.45);
+      --cp-shadow-lg: 0 16px 56px rgba(0,0,0,0.55);
+
+      /* Aliases for shared app.js UI */
+      --cream:        var(--cp-text);
+      --text:         var(--cp-text);
+      --text-mid:     var(--cp-text-mid);
+      --text-dim:     var(--cp-text-dim);
+      --bg:           var(--cp-bg);
+      --bg2:          var(--cp-bg2);
+      --bg3:          var(--cp-bg3);
+      --border:       var(--cp-border);
+      --gold:         var(--cp-gold);
+      --gold-bg:      rgba(196,154,60,0.15);
+      --green:        #2d8a4e;
+      --amber:        #d97706;
+      --red:          #ef4444;
+      --red-bg:       rgba(239,68,68,0.12);
+      --panel-bg:     var(--cp-bg2);
+    }
+
+    /* ---- Layout ---- */
+    .cp-layout {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--cp-bg);
+      
+      color: var(--cp-text);
+    }
+
+    /* ========== SIDEBAR ========== */
+    .cp-sidebar {
+      width: var(--cp-sidebar-w);
+      min-width: var(--cp-sidebar-w);
+      background: var(--cp-sidebar);
+      border-right: 1px solid var(--cp-border);
+      display: flex;
+      flex-direction: column;
+      padding: 26px 16px 22px;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 2px 0 18px rgba(44,26,14,0.04);
+    }
+
+    /* Brand */
+    .cp-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 30px;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+    .cp-brand-badge {
+      width: 44px; height: 44px;
+      background: linear-gradient(145deg, #b8860b, #e8c572);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      
+      font-size: 19px; font-weight: 700; color: #fff;
+      box-shadow: 0 4px 14px rgba(184,134,11,0.32);
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+    .cp-brand-text {}
+    .cp-brand-name {
+      
+      font-size: 15px; font-weight: 700;
+      color: var(--cp-text); line-height: 1.2;
+    }
+    .cp-brand-sub {
+      font-size: 9px; font-weight: 500;
+      color: var(--cp-text-dim);
+      text-transform: uppercase; letter-spacing: 1.4px;
+    }
+
+    /* Nav items */
+    .cp-nav { 
+      position: static !important;
+      display: flex !important; 
+      flex-direction: column !important; 
+      gap: 2px !important; 
+      flex: 1 1 auto !important; 
+      overflow-y: auto !important;
+      min-height: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      padding-right: 4px !important;
+      z-index: auto !important;
+    }
+    .cp-nav::-webkit-scrollbar { width: 4px; }
+    .cp-nav::-webkit-scrollbar-thumb { background: var(--cp-border-s); border-radius: 4px; }
+    .cp-nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 13px;
+      border-radius: 11px;
+      font-size: 13px; font-weight: 500;
+      color: var(--cp-text-mid);
+      cursor: pointer;
+      transition: all 0.16s;
+      text-decoration: none;
+      user-select: none;
+      position: relative;
+    }
+    .cp-nav-item .ni { font-size: 15px; flex-shrink: 0; opacity: 0.7; }
+    .cp-nav-item:hover { background: var(--cp-bg2); color: var(--cp-text); }
+    .cp-nav-item:hover .ni { opacity: 1; }
+    .cp-nav-item.active {
+      background: linear-gradient(135deg, #b8860b 0%, #c9a040 100%);
+      color: #fff; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(184,134,11,0.28);
+    }
+    .cp-nav-item.active .ni { opacity: 1; }
+    .cp-nav-badge {
+      margin-left: auto;
+      background: var(--cp-red);
+      color: #fff; font-size: 10px; font-weight: 800;
+      padding: 2px 7px; border-radius: 20px; min-width: 20px; text-align: center;
+    }
+    .cp-nav-item.active .cp-nav-badge { background: rgba(255,255,255,0.25); }
+    .cp-nav-sep { height: 1px; background: var(--cp-border); margin: 10px 4px; }
+
+    /* User card */
+    .cp-user-card {
+      background: var(--cp-bg2); border: 1px solid var(--cp-border);
+      border-radius: 13px; padding: 13px;
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 18px; cursor: default;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    .cp-user-card:hover { background: var(--cp-bg3); }
+    .cp-user-ava {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #b8860b, #e8c572);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .cp-user-name { font-size: 13px; font-weight: 700; color: var(--cp-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+    .cp-user-email { font-size: 10.5px; color: var(--cp-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+    .cp-user-arrow { margin-left: auto; color: var(--cp-text-dim); font-size: 14px; }
+
+    /* Sidebar footer buttons */
+    .cp-sb-btns { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; flex-shrink: 0; }
+    .cp-sb-btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 9px 14px; border-radius: 11px;
+      font-size: 12.5px; font-weight: 600;
+      
+      cursor: pointer; transition: all 0.16s;
+      text-decoration: none;
+    }
+    .cp-sb-btn-back {
+      border: none;
+      background: var(--cp-gold, #c49a3c); color: #ffffff;
+      font-weight: 700;
+    }
+    .cp-sb-btn-back:hover { background: #b8860b; color: #ffffff; }
+    .cp-sb-btn-out {
+      border: none;
+      background: #dc2626; color: #ffffff;
+      font-weight: 700;
+    }
+    .cp-sb-btn-out:hover { background: #b91c1c; color: #ffffff; }
+
+    /* ========== MAIN AREA ========== */
+    .cp-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    /* Top bar */
+    .cp-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: var(--cp-sidebar);
+      border-bottom: 1px solid var(--cp-border);
+      gap: 14px; flex-shrink: 0; min-height: 64px;
+    }
+    .cp-topbar-left { display: flex; align-items: center; gap: 12px; }
+    .cp-ornament { color: var(--cp-gold); font-size: 18px; opacity: 0.55; letter-spacing: 3px; }
+    .cp-notif-btn {
+      width: 38px; height: 38px;
+      border-radius: 10px; border: 1.5px solid var(--cp-border);
+      background: var(--cp-bg2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--cp-text-mid); position: relative;
+      transition: all 0.16s;
+    }
+    .cp-notif-btn:hover { border-color: var(--cp-gold); color: var(--cp-gold); }
+    .cp-notif-dot {
+      position: absolute; top: -4px; right: -4px;
+      width: 17px; height: 17px;
+      background: var(--cp-red); color: #fff;
+      font-size: 9px; font-weight: 800;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--cp-sidebar);
+    }
+    .cp-topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .cp-join-mtg {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--cp-bg2); border: 1px solid var(--cp-border);
+      border-radius: 11px; padding: 7px 12px;
+    }
+    .cp-join-label { font-size: 11px; font-weight: 600; color: var(--cp-text-mid); white-space: nowrap; }
+    .cp-join-input {
+       text-transform: uppercase; letter-spacing: 1px;
+      width: 116px; padding: 5px 8px;
+      border: 1px solid var(--cp-border); border-radius: 7px;
+      background: var(--cp-sidebar); color: var(--cp-text);
+      font-size: 12px; font-weight: 700; outline: none;
+      transition: border-color 0.18s;
+    }
+    .cp-join-input:focus { border-color: var(--cp-gold); }
+    .cp-btn-join {
+      padding: 6px 14px; border-radius: 8px;
+      background: var(--cp-gold-btn); color: #fff;
+      border: none; cursor: pointer;
+      font-size: 12px; font-weight: 700;
+      
+      transition: all 0.16s; white-space: nowrap;
+    }
+    .cp-btn-join:hover { background: #b8860b; transform: translateY(-1px); }
+    .cp-btn-chat {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 11px;
+      background: #eab308; color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+      font-size: 13px; font-weight: 800;
+      cursor: pointer; transition: all 0.16s;
+    }
+    .cp-btn-chat:hover { background: #ca8a04; color: #ffffff; }
+
+    /* ========== CONTENT SCROLL ========== */
+    .cp-scroll {
+      flex: 1; overflow-y: auto;
+      padding: 32px 36px;
+      background: var(--cp-bg);
+    }
+    .cp-scroll::-webkit-scrollbar { width: 5px; }
+    .cp-scroll::-webkit-scrollbar-thumb { background: var(--cp-border-s); border-radius: 4px; }
+
+    /* ========== TABS ========== */
+    .cp-tab { display: none; animation: cpIn 0.32s ease; }
+    .cp-tab.active { display: block; }
+    @keyframes cpIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tab header */
+    .cp-hdr { margin-bottom: 26px; }
+    .cp-hdr-greeting { font-size: 12px; font-weight: 600; color: var(--cp-gold); margin-bottom: 3px; letter-spacing: 0.3px; }
+    .cp-hdr-title {  font-size: 30px; font-weight: 700; color: var(--cp-text); margin-bottom: 5px; }
+    .cp-hdr-sub { font-size: 13px; color: var(--cp-text-mid); }
+
+    /* ========== APPROVED HERO BANNER ========== */
+    .cp-approved-hero {
+      background: linear-gradient(135deg, #163d23 0%, #1e5530 60%, #24622e 100%);
+      border-radius: var(--cp-radius);
+      padding: 34px 38px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 26px; margin-bottom: 18px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 20px 50px rgba(22,61,35,0.35);
+    }
+    .cp-approved-hero::before {
+      content: ''; position: absolute;
+      top: -60px; left: -60px; width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(46,204,113,0.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cp-ah-body { flex: 1; position: relative; z-index: 2; }
+    .cp-ah-top { display: flex; align-items: center; gap: 14px; margin-bottom: 13px; }
+    .cp-ah-check {
+      width: 50px; height: 50px; border-radius: 50%;
+      background: rgba(46,204,113,0.18); border: 2px solid rgba(46,204,113,0.45);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #2ecc71; flex-shrink: 0;
+    }
+    .cp-ah-title {
+      
+      font-size: 24px; font-weight: 700; color: #fff; letter-spacing: 0.2px;
+    }
+    .cp-ah-desc {
+      color: rgba(255,255,255,0.82); font-size: 14px;
+      line-height: 1.75; margin-bottom: 22px; max-width: 560px;
+    }
+    .cp-ah-desc strong { color: #fff; }
+    .cp-btn-hub {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 26px;
+      background: var(--cp-gold-btn); color: #fff;
+      border: none; border-radius: 11px;
+      font-size: 13.5px; font-weight: 700;
+      
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 8px 22px rgba(196,154,60,0.35);
+    }
+    .cp-btn-hub:hover { background: #b8860b; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(196,154,60,0.45); }
+
+    /* Calendar art decoration */
+    .cp-ah-visual {
+      width: 190px; height: 160px; flex-shrink: 0;
+      position: relative; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cp-cal-art {
+      width: 150px; height: 140px;
+      background: rgba(255,255,255,0.09);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.13);
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.28);
+      transform: rotate(3deg); position: relative;
+    }
+    .cp-cal-top {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.12);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cp-cal-top span { font-size: 8px; color: rgba(255,255,255,0.65); font-weight: 700; }
+    .cp-cal-rings {
+      position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 12px;
+    }
+    .cp-cal-ring { width: 12px; height: 16px; border: 2px solid rgba(255,255,255,0.35); border-radius: 3px 3px 0 0; }
+    .cp-cal-grid {
+      flex: 1; padding: 8px 10px;
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    }
+    .cp-cal-c {
+      aspect-ratio: 1; border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 6px; color: rgba(255,255,255,0.4);
+    }
+    .cp-cal-c.hl { background: rgba(196,154,60,0.65); color: #fff; font-weight: 700; }
+    .cp-cal-ck {
+      position: absolute; bottom: -10px; right: -10px;
+      width: 40px; height: 40px;
+      background: var(--cp-gold-btn); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+      box-shadow: 0 6px 18px rgba(196,154,60,0.5);
+      border: 3px solid rgba(255,255,255,0.18);
+    }
+
+    /* ========== MEETING BOOKED BANNER ========== */
+    .cp-mtg-banner {
+      background: var(--cp-sidebar);
+      border: 1.5px solid var(--cp-border);
+      border-radius: 14px; padding: 16px 22px;
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      margin-bottom: 22px; cursor: pointer;
+      transition: all 0.18s; position: relative; overflow: hidden;
+      box-shadow: var(--cp-shadow);
+    }
+    [data-theme="dark"] .cp-mtg-banner { background: var(--cp-bg2); }
+    .cp-mtg-banner::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 4px;
+      background: linear-gradient(to bottom, #b8860b, #e8c96a);
+      border-radius: 4px 0 0 4px;
+    }
+    .cp-mtg-banner:hover { border-color: var(--cp-gold); box-shadow: var(--cp-shadow-md); transform: translateY(-1px); }
+    .cp-mtg-left { display: flex; align-items: center; gap: 13px; }
+    .cp-mtg-ico { display: none; }
+    .cp-mtg-info h4 { font-size: 14.5px; font-weight: 700; color: var(--cp-gold);  margin-bottom: 2px; }
+    .cp-mtg-info p { font-size: 12px; color: var(--cp-text-mid); }
+    .cp-btn-review {
+      padding: 7px 18px; border: none;
+      border-radius: 9px; background: var(--cp-gold, #c49a3c); color: #ffffff;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      transition: all 0.16s; white-space: nowrap;
+    }
+    .cp-btn-review:hover { background: #b8860b; color: #ffffff; }
+
+    /* ========== STAT CARDS ========== */
+    .cp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 22px; }
+    .cp-stat {
+      background: var(--cp-card, var(--cp-sidebar, #ffffff)) !important;
+      border: 1px solid var(--cp-border) !important;
+      border-radius: 15px; padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: all 0.18s;
+    }
+    .cp-stat:nth-child(1) { border-left: 4px solid #27ae60 !important; }
+    .cp-stat:nth-child(2) { border-left: 4px solid #f39c12 !important; }
+    .cp-stat:nth-child(3) { border-left: 4px solid #e74c3c !important; }
+    #count-approved { color: #27ae60 !important; font-weight: 800; }
+    #count-processing { color: #f39c12 !important; font-weight: 800; }
+    #count-rejected { color: #e74c3c !important; font-weight: 800; }
+    .cp-stat:hover { border-color: var(--cp-gold-btn); box-shadow: var(--cp-shadow-md); }
+    .cp-stat-ico { display: none; }
+    .sico-g { display: none; }
+    .sico-a { display: none; }
+    .sico-r { display: none; }
+    .cp-stat-lbl { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--cp-text-dim, #718096); margin-bottom: 4px; }
+    .cp-stat-val { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 3px; color: var(--cp-text); }
+    .cp-stat-note { font-size: 11px; color: var(--cp-text-dim, #a0aec0); }
+
+    /* Dark Mode: stat cards dark background with crisp white/cream text */
+    [data-theme="dark"] .cp-stat {
+      background: var(--cp-sidebar, #191109) !important;
+      border-color: var(--cp-border) !important;
+    }
+    [data-theme="dark"] .cp-stat-val {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .cp-stat-lbl,
+    [data-theme="dark"] .cp-stat-note {
+      color: var(--cp-text-dim, #8a7055) !important;
+    }
+    :root:not([data-theme="dark"]) .cp-stat-val,
+    [data-theme="light"] .cp-stat-val {
+      color: #111827 !important;
+    }
+
+    /* ========== UPCOMING BANNER ========== */
+    .cp-upcoming {
+      background: var(--cp-card, var(--cp-sidebar, #ffffff)) !important;
+      border: 1px solid var(--cp-border) !important;
+      border-radius: var(--cp-radius); padding: 26px 30px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03); position: relative; overflow: hidden;
+    }
+    [data-theme="dark"] .cp-upcoming {
+      background: var(--cp-sidebar, #191109) !important;
+      border-color: var(--cp-border) !important;
+    }
+    [data-theme="dark"] .cp-upcoming-info h3 {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .cp-upcoming-info p,
+    [data-theme="dark"] .cp-upcoming-ready {
+      color: var(--cp-text-mid, #c4a87a) !important;
+    }
+    :root:not([data-theme="dark"]) .cp-upcoming-info h3,
+    [data-theme="light"] .cp-upcoming-info h3 {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) .cp-upcoming-info p,
+    [data-theme="light"] .cp-upcoming-info p,
+    :root:not([data-theme="dark"]) .cp-upcoming-ready,
+    [data-theme="light"] .cp-upcoming-ready {
+      color: #374151 !important;
+    }
+
+    /* Customer Dashboard Reservation Cards (Light & Dark Mode) */
+    .dash-res-card {
+      background: var(--cp-card, var(--cp-sidebar, #ffffff)) !important;
+      border: 1px solid var(--cp-border) !important;
+      color: var(--cp-text) !important;
+    }
+    [data-theme="dark"] .dash-res-card {
+      background: var(--cp-sidebar, #191109) !important;
+      border-color: var(--cp-border) !important;
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .dash-res-card div[style*="color:#1a202c"],
+    [data-theme="dark"] .dash-res-card div[style*="color: #1a202c"],
+    [data-theme="dark"] .dash-res-card div[style*="color:#000"],
+    [data-theme="dark"] .dash-res-card div[style*="color: #000"] {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .dash-res-card div[style*="color:#2d3748"],
+    [data-theme="dark"] .dash-res-card div[style*="color: #2d3748"] {
+      color: var(--cp-text-mid, #c4a87a) !important;
+    }
+    [data-theme="dark"] .dash-res-card div[style*="color:#718096"],
+    [data-theme="dark"] .dash-res-card div[style*="color: #718096"] {
+      color: var(--cp-text-dim, #8a7055) !important;
+    }
+    :root:not([data-theme="dark"]) .dash-res-card,
+    [data-theme="light"] .dash-res-card {
+      background: #ffffff !important;
+      border-color: #e2e8f0 !important;
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) .dash-res-card div[style*="color:#1a202c"],
+    [data-theme="light"] .dash-res-card div[style*="color:#1a202c"] {
+      color: #111827 !important;
+    }
+
+    /* Customer Consultation Content Panel (Light & Dark Mode) */
+    #c-mt-content {
+      background: var(--cp-card, var(--cp-sidebar, #ffffff));
+      color: var(--cp-text);
+    }
+    [data-theme="dark"] #c-mt-content,
+    [data-theme="dark"] #c-mt-mode-overlay {
+      background: var(--cp-bg, #130e06) !important;
+      color: var(--cp-text, #f0e6d3) !important;
+    }
+    [data-theme="dark"] #c-mt-content div[style*="background:#fdfaf5"],
+    [data-theme="dark"] #c-mt-content div[style*="background: #fdfaf5"],
+    [data-theme="dark"] #c-mt-content div[style*="background:#fff"],
+    [data-theme="dark"] #c-mt-content div[style*="background: #fff"],
+    [data-theme="dark"] #c-mt-content div[style*="background:#ffffff"],
+    [data-theme="dark"] #c-mt-content div[style*="background: #ffffff"],
+    [data-theme="dark"] #c-mt-content details[style*="background:#fdfaf5"],
+    [data-theme="dark"] #c-mt-content details[style*="background: #fdfaf5"],
+    [data-theme="dark"] #c-mt-content summary[style*="background:rgba(196,154,60,0.05)"] {
+      background: var(--cp-card, #191109) !important;
+      border-color: var(--cp-border, rgba(196,154,60,0.15)) !important;
+      color: var(--cp-text, #f0e6d3) !important;
+    }
+    [data-theme="dark"] #c-mt-initial-fee-modal > div,
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background:#fdfaf5"],
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background: #fdfaf5"],
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background:#fff"],
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background: #fff"],
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background:#ffffff"],
+    [data-theme="dark"] #c-mt-initial-fee-modal div[style*="background: #ffffff"] {
+      background: var(--cp-card, #191109) !important;
+      border-color: var(--cp-border, rgba(196,154,60,0.25)) !important;
+      color: var(--cp-text, #f0e6d3) !important;
+    }
+    [data-theme="dark"] #c-mt-initial-fee-modal h2,
+    [data-theme="dark"] #c-mt-initial-fee-modal h3 {
+      color: var(--cp-text, #f0e6d3) !important;
+    }
+    [data-theme="dark"] #c-mt-initial-fee-modal p {
+      color: var(--cp-text-mid, #c4a87a) !important;
+    }
+    [data-theme="dark"] #c-mt-content [style*="color:#111"],
+    [data-theme="dark"] #c-mt-content [style*="color: #111"],
+    [data-theme="dark"] #c-mt-content [style*="color:#333"],
+    [data-theme="dark"] #c-mt-content [style*="color: #333"],
+    [data-theme="dark"] #c-mt-content [style*="color:#000"],
+    [data-theme="dark"] #c-mt-content [style*="color: #000"] {
+      color: var(--cp-text, #f0e6d3) !important;
+    }
+    [data-theme="dark"] #c-mt-content [style*="color:#555"],
+    [data-theme="dark"] #c-mt-content [style*="color: #555"],
+    [data-theme="dark"] #c-mt-content [style*="color:#666"],
+    [data-theme="dark"] #c-mt-content [style*="color: #666"],
+    [data-theme="dark"] #c-mt-content [style*="color:#777"],
+    [data-theme="dark"] #c-mt-content [style*="color: #777"],
+    [data-theme="dark"] #c-mt-content [style*="color:#888"],
+    [data-theme="dark"] #c-mt-content [style*="color: #888"] {
+      color: var(--cp-text-mid, #c4a87a) !important;
+    }
+    [data-theme="dark"] #c-mt-content [style*="border:1px solid #e8dcc8"],
+    [data-theme="dark"] #c-mt-content [style*="border: 1px solid #e8dcc8"],
+    [data-theme="dark"] #c-mt-content [style*="border:1px solid #ede8db"],
+    [data-theme="dark"] #c-mt-content [style*="border: 1px solid #ede8db"] {
+      border-color: var(--cp-border, rgba(196,154,60,0.15)) !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-content,
+    [data-theme="light"] #c-mt-content {
+      background: #ffffff !important;
+      color: #111827 !important;
+    }
+
+    /* Customer Meeting Room Theming (Light & Dark Mode) */
+    :root:not([data-theme="dark"]) #c-mt-mode-overlay,
+    [data-theme="light"] #c-mt-mode-overlay {
+      background: #faf8f4 !important;
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-mode-overlay #c-mt-mode-subtitle,
+    [data-theme="light"] #c-mt-mode-overlay #c-mt-mode-subtitle {
+      color: #1f2937 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-mode-overlay .c-mt-agenda-header,
+    [data-theme="light"] #c-mt-mode-overlay .c-mt-agenda-header {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-agenda span,
+    [data-theme="light"] #c-mt-agenda span {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-nav,
+    [data-theme="light"] #c-mt-nav {
+      background: #f0ebe0 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-nav span,
+    [data-theme="light"] #c-mt-nav span {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-nav .btn-outline,
+    [data-theme="light"] #c-mt-nav .btn-outline {
+      color: #111827 !important;
+      border-color: rgba(0, 0, 0, 0.25) !important;
+      background: transparent !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-nav .btn-outline.active,
+    [data-theme="light"] #c-mt-nav .btn-outline.active {
+      background: #c49a3c !important;
+      color: #111827 !important;
+      border-color: #c49a3c !important;
+    }
+    #c-mt-nav .btn-outline.active::before {
+      display: none !important;
+    }
+
+    [data-theme="dark"] #c-mt-mode-overlay {
+      background: #130e06 !important;
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] #c-mt-mode-overlay > div:first-child,
+    [data-theme="dark"] #c-mt-mode-overlay > div:nth-child(2) > div:first-child,
+    [data-theme="dark"] #c-mt-mode-overlay #c-mt-panel-title {
+      background: #191109 !important;
+      border-color: rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] #c-mt-mode-overlay #c-mt-mode-subtitle {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] #c-mt-mode-overlay .c-mt-agenda-header {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] #c-mt-agenda > div {
+      background: #191109 !important;
+      border-color: rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] #c-mt-agenda span {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] #c-mt-nav {
+      background: #20160d !important;
+      border-color: rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] #c-mt-nav span {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] #c-mt-nav .btn-outline {
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+      background: transparent !important;
+    }
+    [data-theme="dark"] #c-mt-nav .btn-outline.active {
+      background: #c49a3c !important;
+      color: #ffffff !important;
+      border-color: #c49a3c !important;
+    }
+
+    /* Customer Meeting Room Live Package Modification Theming */
+    [data-theme="dark"] #c-mt-content {
+      background: #130e06 !important;
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-container {
+      background: #130e06 !important;
+      border-color: rgba(196,154,60,0.35) !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-header {
+      background: linear-gradient(135deg, rgba(196,154,60,0.22), rgba(196,154,60,0.06)) !important;
+      border-bottom-color: rgba(196,154,60,0.25) !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-left {
+      background: #191109 !important;
+      border-right-color: rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] .c-mt-draft-event-box {
+      background: #1c1508 !important;
+      border-color: rgba(196,154,60,0.2) !important;
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-draft-event-box * {
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-draft-item-row {
+      background: #1c1508 !important;
+      border-color: rgba(196,154,60,0.18) !important;
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-draft-item-row * {
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-right {
+      background: #130e06 !important;
+      color: #f0e6d3 !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-right input[type="text"] {
+      background: #1c1508 !important;
+      color: #f0e6d3 !important;
+      border-color: rgba(196,154,60,0.25) !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-right input[type="text"]::placeholder {
+      color: #8a7055 !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-right .fb:not(.active) {
+      background: #261d0d !important;
+      color: #c4a87a !important;
+      border: 1px solid rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] .c-mt-live-draft-right .fb.active {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .c-mt-catalog-card {
+      background: #191109 !important;
+      border: 1px solid rgba(196,154,60,0.2) !important;
+    }
+    [data-theme="dark"] .c-mt-catalog-card * {
+      color: #f0e6d3;
+    }
+    .cp-upcoming-left { display: flex; align-items: flex-start; gap: 16px; flex: 1; min-width: 0; }
+    .cp-upcoming-ico { display: none; }
+    .cp-upcoming-info h3 { font-size: 16px; font-weight: 700; color: var(--cp-text); margin-bottom: 5px; }
+    .cp-upcoming-info p { font-size: 13px; color: var(--cp-text-mid); line-height: 1.6; }
+    .cp-upcoming-orn {
+      position: absolute; right: 244px; top: 50%; transform: translateY(-50%);
+      color: var(--cp-gold); font-size: 40px; opacity: 0.14;
+       pointer-events: none; line-height: 1;
+    }
+    .cp-upcoming-cta { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+    .cp-upcoming-ready { font-size: 12px; color: var(--cp-text-mid); font-weight: 500; white-space: nowrap; }
+    .cp-btn-new-res {
+      display: flex; align-items: center; gap: 7px;
+      padding: 12px 22px;
+      background: linear-gradient(135deg, #b8860b, #c9a040);
+      color: #fff; border: none; border-radius: 11px;
+      font-size: 13px; font-weight: 700;
+      
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 6px 18px rgba(184,134,11,0.30);
+      text-decoration: none; white-space: nowrap;
+    }
+    .cp-btn-new-res:hover { background: linear-gradient(135deg, #9a6d08, #b8860b); transform: translateY(-2px); box-shadow: 0 10px 26px rgba(184,134,11,0.40); }
+
+    /* Reservation status filter buttons */
+    .cp-res-filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .cp-filter-btn {
+      background: #4b5563;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .cp-filter-btn:hover {
+      background: #374151;
+      color: #ffffff;
+    }
+    .cp-filter-btn.active {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+
+    /* ========== RESERVATION LIST ========== */
+    .cp-res-sec { margin-top: 34px; margin-bottom: 30px; }
+    .cp-res-sec-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--cp-text-dim);
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .cp-res-sec-title::after { content: ''; flex: 1; height: 1px; background: var(--cp-border); }
+    .cp-res-cnt {
+      background: var(--cp-bg3); border: 1px solid var(--cp-border);
+      color: var(--cp-text-mid); font-size: 9.5px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .cp-res-list { display: flex; flex-direction: column; gap: 10px; }
+    .cp-res-empty {
+      padding: 28px 18px; text-align: center;
+      color: var(--cp-text-dim); font-size: 12.5px;
+      background: var(--cp-bg2); border-radius: 12px;
+      border: 1.5px dashed var(--cp-border);
+    }
+    .cp-res-card {
+      background: var(--cp-sidebar); border: 1.5px solid var(--cp-border);
+      border-radius: 14px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      box-shadow: var(--cp-shadow); transition: all 0.18s; cursor: pointer;
+    }
+    [data-theme="dark"] .cp-res-card { background: var(--cp-bg2); }
+    .cp-res-card:hover { border-color: var(--cp-gold); transform: translateX(3px); box-shadow: var(--cp-shadow-md); }
+    .cp-res-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .rd-g { background: #2ecc71; box-shadow: 0 0 0 3px rgba(46,204,113,0.18); }
+    .rd-a { background: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.18); }
+    .rd-r { background: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,0.18); }
+    .cp-res-info { flex: 1; min-width: 0; }
+    .cp-res-name { font-size: 14px; font-weight: 700; color: var(--cp-text); margin-bottom: 4px; }
+    .cp-res-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+    .cp-res-meta-item { font-size: 11.5px; color: var(--cp-text-mid); display: flex; align-items: center; gap: 3px; }
+    .cp-res-pill {
+      padding: 0; border-radius: 0; background: transparent;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0;
+    }
+    .pill-g { background: transparent; color: #2d8a4e; }
+    .pill-a { background: transparent; color: #b07d0a; }
+    .pill-r { background: transparent; color: #c0392b; }
+    .cp-res-arr { color: var(--cp-text-dim); font-size: 17px; flex-shrink: 0; transition: transform 0.16s; }
+    .cp-res-card:hover .cp-res-arr { transform: translateX(3px); }
+
+    /* Two column grid */
+    .cp-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 900px) { .cp-two-col { grid-template-columns: 1fr; } }
+    @media (max-width: 680px) { .cp-stats { grid-template-columns: 1fr; } }
+
+    /* ========== GENERIC CARD ========== */
+    .cp-card {
+      background: var(--cp-sidebar); border: 1.5px solid var(--cp-border);
+      border-radius: var(--cp-radius); overflow: hidden;
+      box-shadow: var(--cp-shadow); margin-bottom: 18px;
+    }
+    [data-theme="dark"] .cp-card { background: var(--cp-bg2); }
+    .cp-card-hdr {
+      padding: 16px 22px; border-bottom: 1px solid var(--cp-border);
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .cp-card-title { font-size: 14px; font-weight: 700; color: var(--cp-text); display: flex; align-items: center; gap: 7px; }
+    .cp-card-sub { font-size: 11.5px; color: var(--cp-text-mid); margin-top: 2px; }
+    .cp-card-body { padding: 20px 22px; }
+
+    /* ========== SUB TAB BAR (Res Details) ========== */
+    .cp-subtabs {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      gap: 6px !important;
+      padding: 6px !important;
+      background: var(--cp-bg2);
+      border-radius: 13px;
+      border: 1px solid var(--cp-border);
+      margin-bottom: 20px;
+      scrollbar-width: none;
+    }
+    .cp-subtabs::-webkit-scrollbar {
+      display: none;
+    }
+    .cp-stab {
+      padding: 7px 14px; border-radius: 9px;
+      font-size: 12px; font-weight: 600; color: #ffffff !important;
+      cursor: pointer; transition: all 0.15s;
+      border: none; background: #4b5563 !important;
+      white-space: nowrap !important; outline: none;
+      flex-shrink: 0 !important;
+    }
+    .cp-stab:hover:not(.active) { background: #374151 !important; color: #ffffff !important; }
+    .cp-stab.active { background: var(--cp-gold, #c49a3c) !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 2px 7px rgba(196,154,60,0.3) !important; }
+    [data-theme="dark"] .cp-stab.active { background: var(--cp-gold, #c49a3c) !important; color: #ffffff !important; }
+    #resd-tab-cancellation.active { background: #dc2626 !important; color: #ffffff !important; }
+
+    /* Selection bar */
+    .cp-sel-bar {
+      background: rgba(184,134,11,0.05); border: 1px solid rgba(184,134,11,0.17);
+      border-radius: 13px; padding: 13px 18px;
+      display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+    }
+    .cp-sel-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--cp-gold); white-space: nowrap; }
+    .cp-sel-field {
+      flex: 1; max-width: 540px; height: 42px; padding: 0 13px;
+      border: 1px solid var(--cp-border); border-radius: 9px;
+      background: var(--cp-sidebar); color: var(--cp-text);
+      font-size: 13.5px; font-weight: 600; 
+      outline: none; transition: border-color 0.18s; cursor: pointer;
+    }
+    .cp-sel-field:focus { border-color: var(--cp-gold); }
+
+    /* ========== NOTIFICATION PANEL ========== */
+    .cp-notif-panel {
+      position: fixed; top: 73px; right: 24px;
+      width: 360px; background: var(--cp-sidebar);
+      border: 1.5px solid var(--cp-border); border-radius: 18px;
+      box-shadow: var(--cp-shadow-lg); z-index: 9000;
+      display: none; animation: cpIn 0.22s ease;
+    }
+    [data-theme="dark"] .cp-notif-panel { background: var(--cp-bg2); }
+    .cp-notif-panel.on { display: block; }
+    .cp-np-hdr { padding: 16px 20px; border-bottom: 1px solid var(--cp-border); display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 14px; color: var(--cp-text); }
+    .cp-np-cls { border: none; background: none; cursor: pointer; color: var(--cp-text-dim); font-size: 17px; line-height: 1; }
+    .cp-np-body { max-height: 360px; overflow-y: auto; padding: 8px; }
+    .cp-ni { padding: 12px; border-radius: 10px; display: flex; gap: 11px; cursor: pointer; transition: background 0.13s; }
+    .cp-ni:hover { background: var(--cp-bg2); }
+    .cp-ni.unread { background: rgba(184,134,11,0.05); }
+    .cp-ni-ico { display: none; }
+    .cp-ni-title { font-size: 13px; font-weight: 700; color: var(--cp-text); margin-bottom: 2px; }
+    .cp-ni-text  { font-size: 12px; color: var(--cp-text-mid); line-height: 1.4; margin-bottom: 3px; }
+    .cp-ni-time  { font-size: 10.5px; color: var(--cp-text-dim); }
+
+    /* ========== CHAT PANEL ========== */
+    .cp-chat {
+      position: fixed; top: 0; right: -44%; width: 42%; height: 100%;
+      background: var(--cp-sidebar);
+      border-left: 1.5px solid var(--cp-border);
+      box-shadow: -20px 0 60px rgba(44,26,14,0.10);
+      z-index: 10000005 !important; display: flex; flex-direction: column;
+      transition: right 0.38s cubic-bezier(0.19,1,0.22,1);
+    }
+    [data-theme="dark"] .cp-chat { background: var(--cp-bg2); }
+    .cp-chat.on { right: 0; }
+    .cp-chat-hdr {
+      padding: 20px 24px; border-bottom: 1px solid var(--cp-border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(184,134,11,0.05), transparent);
+    }
+    .cp-chat-hdr-l { display: flex; align-items: center; gap: 11px; }
+    .cp-chat-ava { width: 40px; height: 40px; background: linear-gradient(135deg, #b8860b, #e8c572); border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 17px; color: #fff; }
+    .cp-chat-title { font-weight: 700; font-size: 15px; color: var(--cp-gold); }
+    .cp-chat-sub { font-size: 11px; color: var(--cp-text-dim); }
+    .cp-chat-cls { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--cp-border); background: var(--cp-bg2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--cp-text-mid); transition: all 0.18s; }
+    .cp-chat-cls:hover { background: var(--cp-red); color: #fff; border-color: var(--cp-red); }
+    .cp-chat-msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--cp-bg); }
+    .cp-chat-inp-row { padding: 16px 20px; border-top: 1px solid var(--cp-border); display: flex; gap: 10px; align-items: center; }
+    .cp-chat-inp { flex: 1; padding: 11px 16px; border: 1.5px solid var(--cp-border); border-radius: 11px; background: var(--cp-bg); color: var(--cp-text); font-size: 13.5px; outline: none;  transition: border-color 0.18s; }
+    .cp-chat-inp:focus { border-color: var(--cp-gold); }
+    .cp-chat-snd { width: 46px; height: 46px; background: var(--cp-gold-btn); border: none; border-radius: 11px; color: #fff; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.16s; box-shadow: 0 4px 12px rgba(184,134,11,0.3); }
+    .cp-chat-snd:hover { background: #b8860b; transform: scale(1.05); }
+
+    /* ========== LOGOUT MODAL ========== */
+    .cp-logout-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); z-index: 99999; display: none; align-items: center; justify-content: center; }
+    .cp-logout-ov.on { display: flex; }
+    .cp-logout-modal { background: var(--cp-sidebar); border-radius: 18px; padding: 30px 34px; max-width: 350px; width: 90%; box-shadow: 0 24px 60px rgba(0,0,0,0.2); animation: cpIn 0.28s ease; }
+    [data-theme="dark"] .cp-logout-modal { background: var(--cp-bg2); }
+    .cp-logout-modal h3 {  font-size: 19px; color: var(--cp-text); margin-bottom: 9px; }
+    .cp-logout-modal p { font-size: 13px; color: var(--cp-text-mid); line-height: 1.6; margin-bottom: 22px; }
+    .cp-logout-btns { display: flex; gap: 10px; }
+    .cp-btn-cancel { flex: 1; padding: 11px; border-radius: 10px; border: none; background: #4b5563; color: #ffffff; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.16s; }
+    .cp-btn-cancel:hover { background: #374151; color: #ffffff; }
+    .cp-btn-logout { flex: 1; padding: 11px; border-radius: 10px; border: none; background: #c0392b; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;  transition: all 0.16s; }
+    .cp-btn-logout:hover { background: #a93226; }
+
+    .btn-primary {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border: none !important;
+    }
+    .btn-primary:hover {
+      background: #b8860b !important;
+      color: #ffffff !important;
+    }
+    .btn-sec, .btn-secondary {
+      background: #4b5563 !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border: none !important;
+    }
+    .btn-sec:hover, .btn-secondary:hover {
+      background: #374151 !important;
+      color: #ffffff !important;
+    }
+    .vcall-pip-ctrl {
+      background: #4b5563 !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 6px !important;
+      padding: 4px 10px !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+    }
+    .vcall-pip-ctrl:hover {
+      background: #374151 !important;
+      color: #ffffff !important;
+    }
+    .vcall-pip-ctrl-red {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+    }
+    .vcall-pip-ctrl-red:hover {
+      background: #b91c1c !important;
+      color: #ffffff !important;
+    }
+
+    .cp-res-detail-modal { background: var(--cp-sidebar); border-radius: 18px; padding: 36px 30px; max-width: 900px; width: 94%; max-height: 92vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.2); animation: cpIn 0.28s ease; position: relative; }
+    [data-theme="dark"] .cp-res-detail-modal { background: var(--cp-bg2); }
+
+    /* ===== CUSTOMER MOBILE NAVIGATION DRAWER & DASHED TOGGLE ===== */
+    .cust-mob-toggle {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      background: rgba(196, 154, 60, 0.08);
+      border: 1.5px dashed var(--cp-gold, #c49a3c);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: var(--cp-gold, #c49a3c);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .cust-mob-toggle:hover, .cust-mob-toggle:active {
+      background: rgba(196, 154, 60, 0.16);
+      border-style: solid;
+    }
+    .cust-dashed-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 3.5px;
+      width: 15px;
+    }
+    .cust-dashed-bars span {
+      display: block;
+      width: 100%;
+      height: 2px;
+      background: var(--cp-gold, #c49a3c);
+      border-radius: 1px;
+    }
+    .cust-sidebar-mobile-hdr {
+      display: none;
+    }
+    .cust-sidebar-close-btn {
+      background: none;
+      border: none;
+      color: var(--cp-text-dim, #6b7280);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      transition: color 0.15s;
+    }
+    .cust-sidebar-close-btn:hover {
+      color: var(--cp-text, #111827);
+    }
+    #cust-sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    #cust-sidebar-backdrop.active {
+      display: block !important;
+    }
+
+    /* Reuse proc-col styles from admin */
+    .resd-panes-container > div { animation: cpIn 0.28s ease; }
+
+    /* ========== CUSTOMER MOBILE RESPONSIVE LAYOUT (<= 900px) ========== */
+    @media (max-width: 900px) {
+      /* Dashed toggle button visible on mobile */
+      .cust-mob-toggle {
+        display: inline-flex !important;
+      }
+
+      /* Sidebar transforms into an off-canvas drawer reaching all the way to bottom with zero gap */
+      .cp-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        right: auto !important;
+        inset: 0 auto 0 0 !important;
+        width: 300px !important;
+        max-width: 88vw !important;
+        /* NOTE: body has `zoom: 0.8` on mobile (applyUIScale in app.js), which shrinks
+           vh/dvh heights to 80%. Anchor top+bottom with auto height instead so the
+           drawer always spans the real viewport, regardless of zoom. */
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        z-index: 10000 !important;
+        background: var(--cp-sidebar, #ffffff) !important;
+        border-right: 1px solid var(--cp-border) !important;
+        box-shadow: 8px 0 32px rgba(0,0,0,0.65) !important;
+        transform: translateX(-105%) !important;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-direction: column !important;
+        display: flex !important;
+        align-self: stretch !important;
+        padding: 0 16px max(24px, env(safe-area-inset-bottom, 24px)) 16px !important;
+        box-sizing: border-box !important;
+      }
+      .cp-sidebar .cp-nav {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 7px !important;
+        flex: 1 1 auto !important;
+        margin-bottom: 14px !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+      }
+      .cp-sidebar .cp-nav-item {
+        padding: 13px 16px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      .cp-sidebar .cp-nav-sep {
+        margin: 8px 4px !important;
+      }
+      .cp-sidebar .cp-user-card {
+        margin-top: auto !important;
+        margin-bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
+        flex-shrink: 0 !important;
+        padding: 13px !important;
+      }
+      .cp-sidebar.mobile-open {
+        transform: translateX(0) !important;
+      }
+      .cust-sidebar-mobile-hdr {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0 14px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid var(--cp-border);
+      }
+      .cp-brand {
+        margin-bottom: 16px !important;
+        padding: 0 !important;
+      }
+      .cp-brand-badge {
+        width: 44px !important;
+        height: 44px !important;
+      }
+      .cp-brand-name {
+        font-size: 16px !important;
+      }
+      .cp-brand-sub {
+        font-size: 11px !important;
+      }
+
+      /* Topbar on mobile: Dashed Tabs on left, Chat Support & Gear icon on right, no logo/staff text */
+      .cp-topbar {
+        padding: 10px 14px !important;
+        min-height: 58px !important;
+        gap: 10px !important;
+      }
+      .cp-topbar-left {
+        gap: 8px !important;
+      }
+      .cp-topbar-right {
+        gap: 8px !important;
+      }
+      .cp-btn-chat {
+        padding: 7px 12px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+      }
+
+      /* Content Scroll area on mobile */
+      .cp-scroll {
+        padding: 16px 12px 28px !important;
+      }
+      .cp-hdr-title {
+        font-size: 20px !important;
+      }
+      .cp-hdr-sub {
+        font-size: 12px !important;
+      }
+
+      /* Full width cards and containers */
+      .cp-card,
+      .cp-pane,
+      .panel {
+        padding: 16px 14px !important;
+        border-radius: 14px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Ample space for typing in all inputs and textareas on mobile */
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="number"],
+      input[type="tel"],
+      input[type="date"],
+      input[type="time"],
+      select,
+      textarea,
+      .input-field,
+      .cp-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-size: 14.5px !important;
+        padding: 11px 13px !important;
+        border-radius: 9px !important;
+        line-height: 1.45 !important;
+      }
+      textarea {
+        min-height: 130px !important;
+      }
+
+      /* Multi-column layouts collapse to single column */
+      .cp-two-col,
+      .cp-stats,
+      .prof-grid,
+      .resd-grid,
+      .cp-grid-2,
+      .cp-grid-3 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 14px !important;
+      }
+
+      /* Reservation details sub-tabs navigation: horizontal touch scroll */
+      .resd-nav-tabs,
+      .cp-sub-nav {
+        display: flex !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 6px !important;
+        padding-bottom: 8px !important;
+        flex-wrap: nowrap !important;
+        scrollbar-width: thin;
+      }
+      .resd-nav-item,
+      .cp-sub-nav-item {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        padding: 8px 14px !important;
+        font-size: 12.5px !important;
+      }
+
+      /* Execution Day mobile layout */
+      .exec-day-main-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+      }
+      .exec-res-desktop-panel {
+        display: none !important;
+      }
+      #cust-exec-mobile-res-btn {
+        display: flex !important;
+      }
+      .customer-event-pics-grid,
+      .admin-event-pics-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      /* Full width chat support side panel */
+      .cp-chat {
+        width: 100% !important;
+        max-width: none !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        height: auto !important;
+        right: -105% !important;
+        z-index: 10000005 !important;
+      }
+      .cp-chat.on {
+        left: 0 !important;
+        right: 0 !important;
+        width: auto !important;
+      }
+      .cp-chat-inp-row {
+        padding: 12px 14px !important;
+      }
+      .cp-chat-inp {
+        padding: 11px 14px !important;
+        font-size: 14px !important;
+      }
+
+      /* Star ratings: comfortable touch target */
+      .cust-fb-star-btn {
+        font-size: 30px !important;
+        padding: 0 4px !important;
+      }
+
+      /* Modals: expanded to fill most of mobile screen */
+      .cp-res-detail-modal {
+        width: 96% !important;
+        max-width: 96vw !important;
+        height: 95vh !important;
+        max-height: 95vh !important;
+        padding: 20px 16px !important;
+        box-sizing: border-box !important;
+      }
+      .cp-logout-modal,
+      .modal {
+        width: 95% !important;
+        max-width: 95vw !important;
+        padding: 20px 16px !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Resource Preparation: 2 boxes per row on mobile */
+      .proc-analytics-bar {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .proc-analytics-bar .proc-stat-box {
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .procurement-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 16px !important;
+      }
+      .procurement-grid .proc-col {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* Event Calendar: maximize space and eliminate gaps on mobile */
+      #dash-tab-calendar .cp-card {
+        padding: 8px 4px !important;
+        margin: 0 !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      #dash-tab-calendar .cp-card-body {
+        padding: 4px 2px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      #customer-calendar,
+      #customer-calendar .fc,
+      #customer-calendar .fc-view-harness,
+      #customer-calendar .fc-view-harness-active,
+      #customer-calendar .fc-daygrid,
+      #customer-calendar .fc-scrollgrid,
+      #customer-calendar .fc-scrollgrid-liquid,
+      #customer-calendar .fc-scrollgrid table,
+      #customer-calendar .fc-col-header,
+      #customer-calendar .fc-daygrid-body,
+      #customer-calendar .fc-scrollgrid-sync-table,
+      #customer-calendar .fc-daygrid-body table {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+        box-sizing: border-box !important;
+      }
+      #customer-calendar .fc-scroller,
+      #customer-calendar .fc-scroller-liquid-absolute {
+        overflow: hidden !important;
+        overflow-y: auto !important;
+      }
+      #customer-calendar .fc-col-header col,
+      #customer-calendar .fc-scrollgrid-sync-table col,
+      #customer-calendar .fc-daygrid-body col {
+        width: 14.2857% !important;
+        min-width: 14.2857% !important;
+      }
+      #customer-calendar .fc-col-header-cell,
+      #customer-calendar .fc-daygrid-day {
+        width: 14.2857% !important;
+        min-width: 14.2857% !important;
+        box-sizing: border-box !important;
+      }
+      #customer-calendar .fc-toolbar {
+        flex-direction: column !important;
+        gap: 8px !important;
+        align-items: stretch !important;
+      }
+      #customer-calendar .fc-toolbar-title {
+        font-size: 16px !important;
+        text-align: center !important;
+      }
+      #customer-calendar .fc-button {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+      }
+
+      /* Execution Day mobile full screen expansion - STRICT 100% WHOLE SCREEN */
+      #cust-exec-live-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        /* Size purely by inset:0 — vw/vh units get shrunk by body `zoom` on mobile */
+        width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        z-index: 9999999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: var(--cp-bg, #faf8f4) !important;
+        box-sizing: border-box !important;
+        display: none;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+      #cust-exec-live-overlay > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      #cust-exec-live-overlay > div:first-child {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex-shrink: 0 !important;
+        padding: 12px 14px !important;
+        box-sizing: border-box !important;
+      }
+      #cust-exec-live-overlay > div:nth-child(2) {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      #cust-exec-live-overlay > div:nth-child(2) > div {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        padding: 12px 10px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 12px !important;
+      }
+      #cust-exec-live-overlay #cust-exec-live-map {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 300px !important;
+        box-sizing: border-box !important;
+      }
+      #cust-exec-phases-container {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+      }
+
+      /* Active Reservation Dropdown Expansion & Label Removal on Mobile */
+      .cp-sel-lbl {
+        display: none !important;
+      }
+      .cp-sel-bar {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 12px 14px !important;
+      }
+      .cp-sel-field,
+      #resd-approved-selector {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+        height: 44px !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Main Dashboard Action Buttons Perfect Alignment */
+      .resd-action-btns-container {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+      }
+      #resd-export-btn,
+      #resd-modify-btn,
+      #resd-req-cancel-btn,
+      #resd-save-mod-btn,
+      #resd-cancel-mod-btn {
+        height: 36px !important;
+        padding: 0 14px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        vertical-align: middle !important;
+        margin: 0 !important;
+      }
+      #dash-tab-execution-day,
+      #dash-tab-execution-day .cp-card,
+      #dash-tab-execution-day .cp-card-body,
+      .exec-day-main-layout,
+      #cust-execution-res-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .exec-day-main-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 12px !important;
+      }
+      .exec-day-main-layout > .panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      #dash-tab-execution-day .cp-card {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+      #dash-tab-execution-day .cp-card-body {
+        padding: 0 !important;
+      }
+
+      /* Guest List and Venue Layout stacked in their own rows on mobile */
+      .cust-guest-seating-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 18px !important;
+        width: 100% !important;
+      }
+      .cust-guest-seating-grid > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Customer Meeting Room mobile overhaul: Warm cream, no black background, stacked sections */
+      #c-mt-mode-overlay {
+        background: var(--cp-bg, #faf8f4) !important;
+        color: var(--cp-text, #111827) !important;
+      }
+      #c-mt-mode-overlay > div:first-child {
+        background: var(--cp-sidebar, #ffffff) !important;
+        border-bottom: 1px solid var(--cp-border) !important;
+        padding: 12px 16px !important;
+      }
+      #c-mt-mode-overlay > div:nth-child(2) > div:first-child {
+        display: none !important;
+      }
+      #c-mt-mode-overlay > div:nth-child(2) {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+      #c-mt-mode-overlay > div:nth-child(2) > div:nth-child(2) {
+        overflow-y: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+      #c-mt-nav {
+        background: var(--cp-bg2, #f0ebe0) !important;
+        border-bottom: 1px solid var(--cp-border) !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-wrap: nowrap !important;
+        padding: 10px 14px !important;
+        scrollbar-width: none;
+      }
+      #c-mt-nav button {
+        background: #4b5563 !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 6px 14px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        cursor: default !important;
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        box-shadow: none !important;
+      }
+      #c-mt-nav button.active {
+        background: var(--cp-gold, #c49a3c) !important;
+        color: #111827 !important;
+      }
+      [data-theme="dark"] #c-mt-nav button.active {
+        color: #ffffff !important;
+      }
+      #c-mt-nav button#btn-c-mt-nav-cancellation.active {
+        background: #dc2626 !important;
+        color: #ffffff !important;
+      }
+      #c-mt-content {
+        background: var(--cp-card, #ffffff) !important;
+        color: var(--cp-text, #111827) !important;
+        padding: 16px 14px !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+      }
+      #c-mt-content > div[style*="grid-template-columns:1fr 1fr"],
+      #c-mt-content > div[style*="grid-template-columns: 1fr 1fr"],
+      #c-mt-content > div > div[style*="grid-template-columns:1fr 1fr"],
+      #c-mt-content > div > div[style*="grid-template-columns: 1fr 1fr"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 20px !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+      #c-mt-content > div {
+        height: auto !important;
+        max-height: none !important;
+      }
+      #c-mt-content div[style*="max-height:380px"],
+      #c-mt-content div[style*="max-height: 380px"] {
+        max-height: none !important;
+        overflow-y: visible !important;
+      }
+      #c-mt-video-btn {
+        padding: 8px 16px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        background: linear-gradient(135deg, #c49a3c, #b8860b) !important;
+        color: #fff !important;
+      }
+      button[onclick="closeCustomerMeetingHub()"] {
+        background: var(--cp-bg2, #f0ebe0) !important;
+        color: var(--cp-text, #111827) !important;
+        border: 1px solid var(--cp-border) !important;
+        font-weight: 700 !important;
+      }
+    }
+    /* ============================================================
+       CUSTOMER EXECUTION DAY & LIVE OVERLAY (LIGHT & DARK MODES)
+       ============================================================ */
+    .cp-chat.on { right: 0 !important; }
+    #cust-exec-live-overlay {
+      position: fixed !important;
+      inset: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: auto !important;
+      max-width: none !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      z-index: 9999999 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-sizing: border-box !important;
+      color: var(--cp-text, #111827);
+      flex-direction: column !important;
+      overflow: hidden !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay,
+    html[data-theme="light"] #cust-exec-live-overlay {
+      background: #faf8f4 !important;
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay .cp-card,
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay .panel {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border-color: rgba(180, 155, 110, 0.3) !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-title,
+    :root:not([data-theme="dark"]) #cust-execution-res-title {
+      color: #000000 !important;
+      font-weight: 800 !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-subtitle {
+      color: #855800 !important;
+      font-weight: 700 !important;
+    }
+    :root:not([data-theme="dark"]) #dash-tab-execution-day {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #dash-tab-execution-day .panel-title {
+      color: #000000 !important;
+      font-weight: 800 !important;
+    }
+    :root:not([data-theme="dark"]) #dash-tab-execution-day .panel-sub {
+      color: #4b5563 !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color:var(--cp-cream)"],
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color: var(--cp-cream)"],
+    :root:not([data-theme="dark"]) #dash-tab-execution-day [style*="color:var(--cp-cream)"],
+    :root:not([data-theme="dark"]) #dash-tab-execution-day [style*="color: var(--cp-cream)"] {
+      color: #111827 !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color:var(--cp-text-dim)"],
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color: var(--cp-text-dim)"] {
+      color: #4b5563 !important;
+    }
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color:var(--cp-text-mid)"],
+    :root:not([data-theme="dark"]) #cust-exec-live-overlay [style*="color: var(--cp-text-mid)"] {
+      color: #374151 !important;
+    }
+    /* ===== PROJECT-WIDE BUTTON STYLING STANDARDIZATION ===== */
+    .btn-outline,
+    #c-mt-nav .btn-outline {
+      background: #4b5563 !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .btn-outline:hover:not(:disabled),
+    #c-mt-nav .btn-outline:hover:not(:disabled) {
+      background: #374151 !important;
+      color: #ffffff !important;
+    }
+    .btn-outline.active,
+    .btn-outline[aria-pressed="true"] {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+    :root:not([data-theme="dark"]) #c-mt-nav .btn-outline.active,
+    [data-theme="light"] #c-mt-nav .btn-outline.active {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #111827 !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="dark"] #c-mt-nav .btn-outline.active {
+      background: var(--cp-gold, #c49a3c) !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+    .btn-secondary {
+      background: #4b5563 !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+    .btn-danger,
+    .btn-reject,
+    .btn-delete {
+      background: #dc2626 !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+    .btn-success,
+    .btn-approve {
+      background: #16a34a !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 700 !important;
+    }
+
+    /* Solid whole-color boxes for Resource Preparation Reservation Total & Days Left in light and dark mode */
+    .proc-stat-box.proc-solid-gold,
+    :root:not([data-theme="dark"]) .proc-stat-box.proc-solid-gold,
+    [data-theme="light"] .proc-stat-box.proc-solid-gold,
+    [data-theme="dark"] .proc-stat-box.proc-solid-gold {
+      background: #c49a3c !important;
+      border-color: #c49a3c !important;
+      color: #ffffff !important;
+    }
+    .proc-stat-box.proc-solid-gold * {
+      color: #ffffff !important;
+    }
+    .proc-stat-box.proc-solid-red,
+    :root:not([data-theme="dark"]) .proc-stat-box.proc-solid-red,
+    [data-theme="light"] .proc-stat-box.proc-solid-red,
+    [data-theme="dark"] .proc-stat-box.proc-solid-red {
+      background: #dc2626 !important;
+      border-color: #dc2626 !important;
+      color: #ffffff !important;
+    }
+    .proc-stat-box.proc-solid-red * {
+      color: #ffffff !important;
+    }
+    .proc-sorted-badge {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+
+<body class="customer-portal">
+  <!-- LOGOUT MODAL -->
+  <div class="cp-logout-ov" id="logout-overlay" onclick="closeLogoutModal()">
+    <div class="cp-logout-modal" onclick="event.stopPropagation()">
+      <h3>Sign Out</h3>
+      <p>Are you sure you want to sign out of your Halden's account?</p>
+      <div class="cp-logout-btns">
+        <button class="cp-btn-cancel" onclick="closeLogoutModal()">Cancel</button>
+        <button class="cp-btn-logout" onclick="executeLogOut()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PROFILE MODAL (First Name, Middle Name, Last Name, Phone) -->
+  <div class="cp-logout-ov" id="edit-phone-overlay" onclick="closeEditPhoneModal()">
+    <div class="cp-logout-modal" onclick="event.stopPropagation()" style="max-width:440px; width:100%;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <h3 style="margin:0; font-size:18px; color:var(--cp-text);">Edit Profile</h3>
+        <button onclick="closeEditPhoneModal()" style="border:none; background:none; cursor:pointer; color:var(--cp-text-dim); font-size:18px;">&#x2715;</button>
+      </div>
+      <p style="font-size:12px; color:var(--cp-text-mid); margin-bottom:16px; line-height:1.5;">
+        Update your personal details and mobile number. Names must only contain letters and spaces (no numbers or special characters, max 20 chars).
+      </p>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="display:block; font-size:10px; font-weight:800; color:var(--cp-gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">First Name</label>
+          <input type="text" id="edit-prof-fname" maxlength="20" class="cp-chat-inp" placeholder="Juan" style="width:100%; box-sizing:border-box;" oninput="validateEditProfileFieldLive(this)" />
+        </div>
+        <div>
+          <label style="display:block; font-size:10px; font-weight:800; color:var(--cp-gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Middle Name (Optional)</label>
+          <input type="text" id="edit-prof-mname" maxlength="20" class="cp-chat-inp" placeholder="Santos" style="width:100%; box-sizing:border-box;" oninput="validateEditProfileFieldLive(this)" />
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:10px; font-weight:800; color:var(--cp-gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Last Name</label>
+        <input type="text" id="edit-prof-lname" maxlength="20" class="cp-chat-inp" placeholder="Dela Cruz" style="width:100%; box-sizing:border-box;" oninput="validateEditProfileFieldLive(this)" />
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:10px; font-weight:800; color:var(--cp-gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Phone Number</label>
+        <div id="edit-prof-phone-wrap" style="display:flex; align-items:center; border:1px solid var(--cp-gold, #c49a3c); border-radius:8px; padding:0 12px; background:rgba(0,0,0,0.03); height:45px;">
+          <span style="color:var(--cp-text); margin-right:8px; font-size:15px; font-weight:600;">+63</span>
+          <input type="tel" id="edit-phone-input" style="border:none; background:transparent; color:var(--cp-text); flex:1; outline:none; height:100%; font-size:15px;" placeholder="9561545551" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, ''); validateEditProfileFieldLive(this);" />
+        </div>
+        <div id="edit-phone-msg" style="font-size:12px; margin-top:8px; display:none;"></div>
+      </div>
+
+      <div class="cp-logout-btns">
+        <button class="cp-btn-cancel" onclick="closeEditPhoneModal()">Cancel</button>
+        <button id="btn-save-phone" onclick="saveUpdatedPhoneNumber()" style="flex:1; padding:11px; font-size:13px; background:var(--cp-gold, #c49a3c); color:#ffffff; border:none; border-radius:10px; font-weight:700; cursor:pointer;">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER RES DETAIL MODAL -->
+  <div class="cp-logout-ov" id="customer-res-detail-overlay" onclick="closeCustomerResModal()">
+    <div class="cp-res-detail-modal" onclick="event.stopPropagation()">
+      <!-- Header flourish + Action button row (Export Quotation & Close) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:12px;">
+        <div style="flex:1;"></div>
+        <svg width="180" height="20" viewBox="0 0 200 24" fill="none" style="flex-shrink:0;">
+          <path d="M0 12h80" stroke="#c49a3c" stroke-width="0.6"/>
+          <path d="M120 12h80" stroke="#c49a3c" stroke-width="0.6"/>
+          <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#c49a3c"/>
+          <circle cx="85" cy="12" r="2" fill="#c49a3c" fill-opacity="0.5"/>
+          <circle cx="115" cy="12" r="2" fill="#c49a3c" fill-opacity="0.5"/>
+        </svg>
+        <div style="flex:1; display:flex; justify-content:flex-end; align-items:center; gap:12px;">
+          <button id="btn-export-quotation" onclick="exportReservationQuotation()" style="padding:8px 18px; background:linear-gradient(135deg,#b8860b,#c9a040); color:#fff; border:none; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; letter-spacing:0.5px; box-shadow:0 4px 14px rgba(184,134,11,0.30); transition:all 0.18s; white-space:nowrap;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 20px rgba(184,134,11,0.40)';" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(184,134,11,0.30)';">Export Quotation</button>
+          <div class="cp-np-cls" style="width:36px; height:36px; background:var(--cp-bg2); color:var(--cp-text); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; border:1px solid var(--cp-border); flex-shrink:0;" onclick="closeCustomerResModal()">&#x2715;</div>
+        </div>
+      </div>
+
+      <!-- Cancellation Details Banner (visible when reservation is cancelled) -->
+      <div id="crm-cancellation-banner" style="display:none; margin-bottom:18px;"></div>
+
+      <!-- Labels + Title + Price -->
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; gap:20px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap;">
+            <span id="crm-origin-badge" style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;"></span>
+            <span style="color:var(--cp-gold); font-size:10px; font-weight:800;">·</span>
+            <span id="crm-status-badge" style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;"></span>
+          </div>
+          <h2 id="crm-title" style=" font-size:28px; color:var(--cp-text); margin:0 0 6px 0; line-height:1.15;"></h2>
+          <div id="crm-premade-name-wrap" style="display:none; font-size:12px; color:var(--cp-text-mid); margin-bottom:6px;">Premade Package: <span style="font-weight:600; color:var(--cp-gold);" id="crm-premade-name-val"></span></div>
+          <p id="crm-desc" style="color:var(--cp-text-mid); font-size:13px; line-height:1.6; margin:0;"></p>
+        </div>
+        <div style="text-align:right; flex-shrink:0;">
+          <div id="crm-price" style=" font-size:28px; font-weight:700; color:var(--cp-gold); line-height:1;"></div>
+          <div id="crm-pax" style="font-size:12px; color:var(--cp-text-mid); margin-top:5px;"></div>
+        </div>
+      </div>
+
+      <!-- Info grid: theme / occasion / date / time / call time -->
+      <div style="border:1px solid var(--cp-border); border-radius:12px; background:var(--cp-bg3); margin-bottom:14px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:0;">
+          <div style="padding:14px 18px; border-right:1px solid var(--cp-border); border-bottom:1px solid var(--cp-border);">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Theme</div>
+            <div id="crm-theme" style="color:var(--cp-text); font-size:14px; font-weight:600;"></div>
+          </div>
+          <div style="padding:14px 18px; border-bottom:1px solid var(--cp-border);">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Occasion</div>
+            <div id="crm-occasion" style="color:var(--cp-text); font-size:14px; font-weight:600;"></div>
+          </div>
+          <div style="padding:14px 18px; border-right:1px solid var(--cp-border); border-bottom:1px solid var(--cp-border);">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Event Date</div>
+            <div id="crm-date" style="color:var(--cp-text); font-size:14px; font-weight:600;"></div>
+          </div>
+          <div style="padding:14px 18px; border-bottom:1px solid var(--cp-border);">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Time Frame</div>
+            <div id="crm-time" style="color:var(--cp-text); font-size:14px; font-weight:600;"></div>
+          </div>
+          <div style="padding:14px 18px; grid-column:1/-1; border-bottom:1px solid var(--cp-border);">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Call Time</div>
+            <div id="crm-call-time" style="color:var(--cp-text); font-size:14px; font-weight:600;"></div>
+          </div>
+          
+          <div style="padding:14px 18px; grid-column:1/-1;">
+            <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Event Setup</div>
+            <div id="crm-event-setup" style="color:var(--cp-gold); font-size:14px; font-weight:700;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venue + VIP + Additional Charges row -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
+        <div style="border:1px solid var(--cp-border); border-radius:12px; padding:14px 18px; background:var(--cp-bg3);">
+          <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">Venue</div>
+          <div id="crm-venue-loc" style="color:var(--cp-text); font-size:13px; font-weight:600; margin-bottom:2px;"></div>
+          <div id="crm-venue-addr" style="color:var(--cp-text-mid); font-size:12px; line-height:1.4;"></div>
+          <div id="crm-venue-info" style="color:var(--cp-text); font-size:12px; line-height:1.4; margin-top:6px; white-space:pre-wrap; word-break:break-word; display:none;"></div>
+        </div>
+        <div style="border:1px solid var(--cp-border); border-radius:12px; padding:14px 18px; background:var(--cp-bg3);">
+          <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px;">VIP Guests</div>
+          <div id="crm-vip" style="color:var(--cp-text); font-size:13px; font-weight:600;"></div>
+        </div>
+      </div>
+
+      <!-- Additional Charges -->
+      <div style="border:1px solid var(--cp-border); border-radius:12px; padding:14px 18px; background:var(--cp-bg3); margin-bottom:14px;">
+        <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Additional Charges</div>
+        <div id="crm-additional-charges" style="color:var(--cp-text); font-size:13px; font-weight:600;">None</div>
+      </div>
+
+
+
+      <!-- Proposed Meeting Times -->
+      <div id="crm-meetings-wrap" style="border:1px solid var(--cp-border); border-radius:12px; padding:14px 18px; background:var(--cp-bg3); margin-bottom:14px; display:none;">
+        <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px;">Proposed Meeting Times</div>
+        <div id="crm-meetings" style="display:flex; flex-direction:column; gap:6px;"></div>
+      </div>
+
+      <!-- Items divider -->
+      <div style="position:relative; text-align:center; margin-bottom:16px;">
+        <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--cp-border);"></div>
+        <span style="position:relative; background:var(--cp-sidebar); padding:0 14px; color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;">Included in this Package</span>
+      </div>
+
+      <!-- Items by category (injected by JS) -->
+      <div id="crm-items" style="margin-bottom:20px; display:flex; flex-direction:column; gap:14px;">
+        <div style="text-align:center; color:var(--cp-text-mid); font-size:13px; padding:20px;">Loading items...</div>
+      </div>
+
+      <!-- Pricing summary (injected by JS) -->
+      <div id="crm-pricing-section" style="display:none; border-top:1px solid var(--cp-border); padding-top:18px; margin-bottom:22px;">
+        <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px;">Pricing Details</div>
+        <div id="crm-pricing-rows" style="display:flex; flex-direction:column; gap:8px; font-size:13px;"></div>
+        <div style="border-top:1px solid var(--cp-border); margin-top:12px; padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:13px; font-weight:700; color:var(--cp-text);">Total Amount</span>
+          <span id="crm-pricing-total" style="font-size:18px; font-weight:800; color:var(--cp-gold);"></span>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- CUSTOMER MEETING ROOM OVERLAY (VIEW-ONLY) -->
+  <div id="c-mt-mode-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:var(--cp-bg, #faf8f4); color:var(--cp-text, #111827); flex-direction:column; overflow:hidden;">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 28px; background:var(--cp-sidebar, #ffffff); border-bottom:1px solid var(--cp-border, rgba(180,155,110,0.28)); flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#c49a3c; letter-spacing:1px; text-transform:uppercase;">Live Consultation</div>
+          <div id="c-mt-mode-subtitle" style="font-size:12px; color:var(--cp-text-dim, #4b5563); margin-top:2px;">Loading meeting details...</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button id="c-mt-video-btn" onclick="enterCustomerVideo()" style="display:none; padding:8px 18px; background:#c49a3c; color:#ffffff; font-size:12px; font-weight:700; border-radius:8px; border:none; cursor:pointer;">Join Video Call</button>
+        <button onclick="closeCustomerMeetingHub()" style="padding:8px 18px; background:#dc2626; color:#ffffff; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;">Leave</button>
+      </div>
+    </div>
+    <!-- Body -->
+    <div style="display:flex; flex:1; overflow:hidden;">
+      <!-- Left: Agenda -->
+      <div style="width:280px; flex-shrink:0; border-right:1px solid var(--cp-border, rgba(180,155,110,0.28)); display:flex; flex-direction:column; background:var(--cp-sidebar, #ffffff);">
+        <div class="c-mt-agenda-header" style="padding:20px 20px 10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#111827;">Discussion Agenda</div>
+        <div id="c-mt-agenda" style="padding:0 12px; display:flex; flex-direction:column; gap:8px;"></div>
+        <div id="c-mt-payment-receipt" style="display:none !important;"></div>
+        <div id="c-mt-notes-wrapper" style="display:none !important;">
+          <div id="c-mt-notes"></div>
+        </div>
+      </div>
+      <!-- Right: Main Panel -->
+      <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--cp-bg, #faf8f4);">
+        <div id="c-mt-nav" style="display:flex; align-items:center; gap:8px; padding:14px 24px; border-bottom:1px solid var(--cp-border, rgba(180,155,110,0.28)); background:var(--cp-bg2, #f0ebe0); flex-shrink:0;">
+          <span style="font-size:11px; color:var(--cp-text-dim, #4b5563); margin-right:4px;">Viewing:</span>
+          <button id="btn-c-mt-nav-res"     class="btn-outline" style="display:inline-block;" disabled>Reservation</button>
+          <button id="btn-c-mt-nav-food"    class="btn-outline" style="display:none;" disabled>Food Tasting</button>
+          <button id="btn-c-mt-nav-design"  class="btn-outline" style="display:none;" disabled>Design</button>
+          <button id="btn-c-mt-nav-rundown" class="btn-outline" style="display:none;" disabled>Rundown</button>
+          <button id="btn-c-mt-nav-logistics" class="btn-outline" style="display:none;" disabled>Additional Details</button>
+          <button id="btn-c-mt-nav-payment" class="btn-outline" style="display:none;" disabled>Payment</button>
+          <button id="btn-c-mt-nav-venue"   class="btn-outline" style="display:none;" disabled>Venue</button>
+          <button id="btn-c-mt-nav-cancellation" class="btn-outline" style="display:none;" disabled>Cancellation</button>
+          <span style="margin-left:auto; font-size:11px; color:var(--cp-text-dim, #4b5563); font-style:italic;">Admin controls the view</span>
+        </div>
+        <div id="c-mt-panel-title" style="padding:10px 24px 4px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#c49a3c; flex-shrink:0; background:var(--cp-sidebar, #ffffff);">Reservation Review</div>
+        <div id="c-mt-content" style="flex:1; overflow-y:auto; padding:20px 24px; background:var(--cp-bg, #faf8f4); color:var(--cp-text, #111827);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="cp-notif-panel" id="dash-notif-panel">
+    <div class="cp-np-hdr">
+      <span>Notifications</span>
+      <button class="cp-np-cls" onclick="toggleNotifPanel()">&#x2715;</button>
+    </div>
+    <div class="cp-np-body" id="dash-notif-list">
+      <div class="cp-ni unread">
+        <div class="cp-ni-ico"></div>
+        <div>
+          <div class="cp-ni-title">Welcome to Halden's!</div>
+          <div class="cp-ni-text">Thank you for joining our elite catering community.</div>
+          <div class="cp-ni-time">Just now</div>
+        </div>
+      </div>
+      <div class="cp-ni">
+        <div class="cp-ni-ico"></div>
+        <div>
+          <div class="cp-ni-title">New Feature: Venue GPS</div>
+          <div class="cp-ni-text">Pin your venue location directly in the app.</div>
+          <div class="cp-ni-time">2h ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div id="dash-chat-side-panel" class="cp-chat">
+    <div class="cp-chat-hdr">
+      <div class="cp-chat-hdr-l">
+        <div class="cp-chat-ava">H</div>
+        <div>
+          <div class="cp-chat-title">Live Support</div>
+          <div class="cp-chat-sub">Chat with Halden's team in real-time</div>
+          <div class="cp-chat-spam-warn" style="font-size:10.5px; color:#ef4444; margin-top:4px; line-height:1.35; font-weight:500;">You will be locked out of the chatting function if you ever decided to spam, please be aware of this and don't send too many messages at once. Thank you.</div>
+        </div>
+      </div>
+      <button class="cp-chat-cls" onclick="toggleDashChat()">&#x2715;</button>
+    </div>
+    <div id="dash-chat-messages" class="cp-chat-msgs"></div>
+    <div id="cp-chat-inp-container" class="cp-chat-inp-row">
+      <input type="text" id="dash-chat-input" class="cp-chat-inp" placeholder="Type your message"
+        onkeydown="if(event.key==='Enter') sendDashChatMessage()" />
+      <button class="cp-chat-snd" onclick="sendDashChatMessage()">&#x27A4;</button>
+    </div>
+    <div id="cp-chat-lockout-bar" style="display:none; padding:12px 14px; background:rgba(239,68,68,0.1); border-top:1px solid rgba(239,68,68,0.3); text-align:center; font-size:12px; font-weight:700; color:#ef4444;">
+      Messaging locked: <span id="cp-chat-lockout-timer" style="font-family:monospace; font-size:13px; font-weight:800;">10:00</span> remaining
+    </div>
+  </div>
+
+  <!-- Backdrop for Customer Mobile Sidebar Drawer -->
+  <div id="cust-sidebar-backdrop" onclick="toggleCustomerMobileSidebar(false)"></div>
+
+  <!-- ============================================================
+       MAIN LAYOUT
+  ============================================================ -->
+  <div id="dash-overlay" class="cp-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="cp-sidebar">
+      <!-- Mobile Sidebar Drawer Header with 'X' Close Button -->
+      <div class="cust-sidebar-mobile-hdr" id="cust-sidebar-mobile-hdr">
+        <div style="font-weight:700; font-size:15px; color:var(--cp-text); letter-spacing:0.5px;">Navigation Menu</div>
+        <button class="cust-sidebar-close-btn" onclick="toggleCustomerMobileSidebar(false)" aria-label="Close Sidebar">&times;</button>
+      </div>
+
+      <div class="cp-brand">
+        <div class="cp-brand-badge" style="background:none; border:none; padding:0; overflow:hidden; border-radius:50%; width:72px; height:72px; flex-shrink:0;">
+          <img src="https://res.cloudinary.com/dg8ytmck5/image/upload/v1787591288/halden_logo_bgzhdu.png" alt="Logo" style="width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <div class="cp-brand-text">
+          <div class="cp-brand-name">Hal'Serve</div>
+          <div class="cp-brand-sub">Halden's Catering Services</div>
+        </div>
+      </div>
+
+      <nav class="cp-nav">
+        <div class="cp-nav-item active" id="nav-reservations" onclick="switchDashTab('reservations', this)">
+          <span class="ni"></span> My Reservations
+        </div>
+        <div class="cp-nav-item" id="nav-saved" onclick="switchDashTab('saved', this)">
+          <span class="ni"></span> Saved Reservations
+        </div>
+        <div class="cp-nav-item" id="nav-calendar" onclick="switchDashTab('calendar', this)">
+          <span class="ni"></span> Event Calendar
+        </div>
+        <div class="cp-nav-item" id="nav-execution-day" onclick="switchDashTab('execution-day', this)">
+          <span class="ni"></span> Execution Day
+        </div>
+        <div class="cp-nav-item" id="nav-meetings" onclick="switchDashTab('meetings', this)">
+          <span class="ni"></span> Meetings
+        </div>
+        <div class="cp-nav-item" id="nav-resdetails" onclick="switchDashTab('resdetails', this)">
+          <span class="ni"></span> Reservation Details
+        </div>
+        <div class="cp-nav-item" id="nav-payments" onclick="switchDashTab('payments', this)">
+          <span class="ni"></span> Payments
+        </div>
+        <div class="cp-nav-item" id="nav-reviews" onclick="switchDashTab('reviews', this)">
+          <span class="ni"></span> Customer Feedback
+        </div>
+        <div class="cp-nav-item" id="nav-profile" onclick="switchDashTab('profile', this)">
+          <span class="ni"></span> Profile
+        </div>
+        <div class="cp-nav-sep"></div>
+        <div class="cp-nav-item" id="nav-flags" onclick="switchDashTab('flags', this)">
+          <span class="ni"></span> Notifications
+          <span id="flag-badge" class="cp-nav-badge" style="display:none;">0</span>
+        </div>
+      </nav>
+
+      <div class="cp-user-card">
+        <div class="cp-user-ava" id="cp-ava-letter">U</div>
+        <div style="min-width:0;">
+          <div class="cp-user-name" id="dash-user-name">Customer Name</div>
+          <div class="cp-user-email" id="dash-user-email">customer@email.com</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="cp-main">
+
+      <!-- TOP BAR -->
+      <div class="cp-topbar">
+        <div class="cp-topbar-left">
+          <!-- Dashed Mobile Button: opens left sidebar tabs -->
+          <button class="cust-mob-toggle" id="cust-mob-toggle" onclick="toggleCustomerMobileSidebar(true)" aria-label="Open Navigation">
+            <span class="cust-dashed-bars">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+            <span class="cust-mob-toggle-txt">Tabs</span>
+          </button>
+
+          <button class="cp-notif-btn" id="notif-btn-top" onclick="toggleNotifPanel()" style="display:none;">
+            &#x1F514;
+            <span class="cp-notif-dot" id="dash-notif-badge">2</span>
+          </button>
+        </div>
+        <div class="cp-topbar-right" style="display:flex; align-items:center; gap:12px;">
+          <div id="meeting-join-error" style="display:none; font-size:11px; color:#e74c3c; font-weight:600;"></div>
+          <button class="cp-btn-chat" onclick="toggleDashChat()">Chat Support</button>
+          
+          <div class="dropdown" id="cust-settings-dropdown" style="margin-left: 4px; display: flex; align-items: center; position: relative;">
+            <button class="dropdown-toggle nav-settings-btn" id="cust-settings-toggle-btn" onclick="toggleCustSettingsDropdown(event)" aria-label="Settings" title="Settings" style="background:var(--cp-bg2); border:1px solid var(--cp-border); padding:9px 10px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all 0.2s;">
+               <!-- Settings Gear Icon -->
+               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--cp-text-mid);">
+                 <circle cx="12" cy="12" r="3"></circle>
+                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+               </svg>
+            </button>
+            <div class="dropdown-menu nav-settings-menu" id="cust-settings-menu" style="right: 0; left: auto; top: 44px; min-width: 185px; padding: 8px; cursor: default; z-index: 9999;">
+               <div style="display:flex; flex-direction:column; gap:4px;">
+                 <a href="index.html" class="dropdown-item" style="display:flex; align-items:center; gap:8px; text-decoration:none; padding:10px; font-size:13px; color:var(--cp-text-mid); font-weight:600; border-radius:8px;">
+                   <span>&larr; Back to Main Site</span>
+                 </a>
+                 <button type="button" class="dropdown-item theme-toggle-btn" onclick="toggleTheme()" style="display:flex; align-items:center; gap:8px; padding:10px; font-size:13px; color:var(--cp-text-mid); font-weight:600; border-radius:8px; background:none; border:none; width:100%; text-align:left; cursor:pointer; font-family:inherit;">
+                   <span class="theme-label">Light Mode</span>
+                 </button>
+                 <span class="dropdown-item" onclick="confirmLogOut()" style="display:flex; align-items:center; gap:8px; cursor: pointer; color: var(--cp-red); font-weight:600; padding:10px; font-size:13px; border-radius:8px; border-top:1px solid var(--cp-border); margin-top:4px;">
+                   <span>Sign Out</span>
+                 </span>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCROLLABLE CONTENT -->
+      <div class="cp-scroll">
+
+        <!-- ===================== TAB: MY RESERVATIONS ===================== -->
+        <div id="dash-tab-reservations" class="cp-tab active">
+          <div class="cp-hdr">
+            <div class="cp-hdr-greeting" id="res-greeting">Welcome back!</div>
+            <h1 class="cp-hdr-title">My Reservations</h1>
+            <p class="cp-hdr-sub">Track your event status and history</p>
+          </div>
+
+          <!-- Approved Hero Banner -->
+          <div id="approved-banner" class="cp-approved-hero" style="display:none;">
+            <div class="cp-ah-body">
+              <div class="cp-ah-top">
+                <div class="cp-ah-check">&#10003;</div>
+                <h2 class="cp-ah-title">Reservation Approved!</h2>
+              </div>
+              <p class="cp-ah-desc">
+                Congratulations! Your upcoming event has been officially confirmed by our executive team.
+                We are now transitioning into the <strong>execution and procurement phase</strong>.
+                You can now track your event's progress, logistics, and personnel in real-time.
+              </p>
+              <button class="cp-btn-hub" onclick="switchDashTab('resdetails')">
+                Access Planning Hub &rarr;
+              </button>
+            </div>
+            <div class="cp-ah-visual">
+              <div class="cp-cal-art">
+                <div class="cp-cal-rings">
+                  <div class="cp-cal-ring"></div>
+                  <div class="cp-cal-ring"></div>
+                  <div class="cp-cal-ring"></div>
+                </div>
+                <div class="cp-cal-top">
+                  <span>EVENT DAY</span>
+                  <span>2026</span>
+                </div>
+                <div class="cp-cal-grid" id="cp-cal-cells"></div>
+                <div class="cp-cal-ck">&#10003;</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Meeting Booked Banner -->
+          <div id="meeting-booked-banner" class="cp-mtg-banner" style="display:none;"
+            onclick="switchDashTab('meetings')">
+            <div class="cp-mtg-left">
+              <div class="cp-mtg-ico"></div>
+              <div class="cp-mtg-info">
+                <h4>Meeting Booked!</h4>
+                <p>Review your consultation agenda and details.</p>
+              </div>
+            </div>
+            <button class="cp-btn-review" onclick="event.stopPropagation(); switchDashTab('meetings')">Review &rarr;</button>
+          </div>
+
+          <!-- Stat Cards -->
+          <div class="cp-stats">
+            <div class="cp-stat">
+              <div class="cp-stat-ico sico-g"></div>
+              <div>
+                <div class="cp-stat-lbl">Approved / Confirmed</div>
+                <div class="cp-stat-val" id="count-approved">0</div>
+                <div class="cp-stat-note" id="note-approved">No approved reservations.</div>
+              </div>
+            </div>
+            <div class="cp-stat">
+              <div class="cp-stat-ico sico-a"></div>
+              <div>
+                <div class="cp-stat-lbl">Processing</div>
+                <div class="cp-stat-val" id="count-processing">0</div>
+                <div class="cp-stat-note" id="note-processing">No processing reservations.</div>
+              </div>
+            </div>
+            <div class="cp-stat">
+              <div class="cp-stat-ico sico-r"></div>
+              <div>
+                <div class="cp-stat-lbl">Rejected</div>
+                <div class="cp-stat-val" id="count-rejected">0</div>
+                <div class="cp-stat-note" id="note-rejected">No rejected reservations.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming Banner -->
+          <div class="cp-upcoming">
+            <div class="cp-upcoming-left">
+              <div class="cp-upcoming-ico"></div>
+              <div class="cp-upcoming-info">
+                <h3>Upcoming Reservation</h3>
+                <p id="upcoming-res-text">You have no upcoming events yet.<br/>Let's create something memorable together!</p>
+              </div>
+            </div>
+            <div class="cp-upcoming-orn" aria-hidden="true"></div>
+            <div class="cp-upcoming-cta" id="upcoming-res-cta">
+              <div class="cp-upcoming-ready" id="upcoming-res-ready">Ready to plan your next event?</div>
+              <a href="index.html#catalog" class="cp-btn-new-res" id="upcoming-res-btn">Create New Reservation</a>
+            </div>
+          </div>
+
+          <!-- Reservation Status Filter Buttons -->
+          <div class="cp-res-filter-bar">
+            <button class="cp-filter-btn active" onclick="filterCustomerReservations('all', this)" data-filter="all">All</button>
+            <button class="cp-filter-btn" onclick="filterCustomerReservations('approved', this)" data-filter="approved">Approved</button>
+            <button class="cp-filter-btn" onclick="filterCustomerReservations('processing', this)" data-filter="processing">Processing</button>
+            <button class="cp-filter-btn" onclick="filterCustomerReservations('completed', this)" data-filter="completed">Completed</button>
+            <button class="cp-filter-btn" onclick="filterCustomerReservations('cancelled', this)" data-filter="cancelled">Cancelled</button>
+          </div>
+
+          <!-- Reservation Lists -->
+          <div class="cp-res-sec">
+            <div class="cp-res-sec-title">
+              Approved / Confirmed
+              <span class="cp-res-cnt" id="badge-approved">0</span>
+            </div>
+            <div id="list-approved" class="cp-res-list">
+              <div class="cp-res-empty">No approved reservations yet.</div>
+            </div>
+          </div>
+
+          <div class="cp-two-col">
+            <div class="cp-res-sec" style="margin-top:0;">
+              <div class="cp-res-sec-title">Processing <span class="cp-res-cnt" id="badge-processing">0</span></div>
+              <div id="list-processing" class="cp-res-list"><div class="cp-res-empty">No processing reservations.</div></div>
+            </div>
+            <div class="cp-res-sec" style="margin-top:0;">
+              <div class="cp-res-sec-title">Rejected <span class="cp-res-cnt" id="badge-rejected">0</span></div>
+              <div id="list-rejected" class="cp-res-list"><div class="cp-res-empty">No rejected reservations.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: SAVED RESERVATIONS ===================== -->
+        <div id="dash-tab-saved" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Saved Packages</h1>
+                      </div>
+          <div id="saved-res-list" style="display:flex; flex-direction:column; gap:16px;">
+            <div style="text-align:center; padding:40px; color:var(--cp-text-dim); font-size:14px; background:var(--cp-bg3); border-radius:12px; border:1px solid var(--cp-border);">Loading saved packages...</div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: EVENT CALENDAR ===================== -->
+        <div id="dash-tab-calendar" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Event Calendar</h1>
+                      </div>
+          <div class="cp-card">
+            <div class="cp-card-hdr">
+              <div>
+                <div class="cp-card-title">Your Event Schedule</div>
+                <div class="cp-card-sub">All confirmed events and meetings at a glance</div>
+              </div>
+            </div>
+            <div class="cp-card-body">
+              <div id="customer-calendar" style="min-height:420px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: EXECUTION DAY ===================== -->
+        <div id="dash-tab-execution-day" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Execution Day</h1>
+                      </div>
+          <div class="cp-card">
+            <div class="cp-card-body" style="padding:20px;">
+              <!-- Mobile toggle button to open reservations drawer -->
+              <button id="cust-exec-mobile-res-btn" onclick="toggleCustExecMobileResDrawer(true)"
+                style="display:none;align-items:center;justify-content:center;gap:8px;font-size:13px;padding:10px 16px;margin-bottom:14px;width:100%;background:var(--cp-gold, #c49a3c);border:none;color:#ffffff;border-radius:10px;font-weight:700;cursor:pointer;">
+                <i class="fas fa-bars"></i> <span>My Approved Reservations</span>
+              </button>
+
+              <div class="exec-day-main-layout" style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;">
+
+                <!-- Left: Customer Approved Reservations -->
+                <div class="panel exec-res-desktop-panel" style="margin:0;background:var(--cp-bg2);border:1px solid var(--cp-border);border-radius:12px;overflow:hidden;">
+                  <div class="panel-hdr" style="padding:14px 18px;border-bottom:1px solid var(--cp-border);background:var(--cp-bg3);">
+                    <div>
+                      <div class="panel-title" style="font-size:13px;font-weight:700;color:var(--cp-text);">Approved Reservations</div>
+                      <div class="panel-sub" style="font-size:11px;color:var(--cp-text-dim);">Grouped by event month</div>
+                    </div>
+                  </div>
+                  <div class="panel-body" id="cust-execution-res-list" style="padding:0;max-height:660px;overflow:auto;">
+                    <div style="padding:18px;color:var(--cp-text-dim);font-size:12px;text-align:center;">Loading your reservations...</div>
+                  </div>
+                </div>
+
+                <!-- Mobile Reservations Drawer -->
+                <div id="cust-exec-mobile-res-drawer" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);" onclick="if(event.target===this)toggleCustExecMobileResDrawer(false)">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:85%;max-width:320px;background:var(--cp-bg2);border-right:1px solid var(--cp-border);display:flex;flex-direction:column;box-shadow:4px 0 24px rgba(0,0,0,0.5);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--cp-border);">
+                      <div>
+                        <div style="font-size:14px;font-weight:700;color:var(--cp-text);">My Reservations</div>
+                        <div style="font-size:11px;color:var(--cp-text-dim);">Select event to view</div>
+                      </div>
+                      <button onclick="toggleCustExecMobileResDrawer(false)" style="background:none;border:none;color:var(--cp-text-dim);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+                    </div>
+                    <div id="cust-execution-res-list-mobile" style="flex:1;overflow-y:auto;padding:0;"></div>
+                  </div>
+                </div>
+
+                <!-- Right: Execution Content -->
+                <div class="panel" style="margin:0;background:var(--cp-bg2);border:1px solid var(--cp-border);border-radius:12px;overflow:hidden;">
+                  <div class="panel-hdr" style="padding:16px 20px;border-bottom:1px solid var(--cp-border);background:var(--cp-bg3);">
+                    <div>
+                      <div class="panel-title" id="cust-execution-res-title" style="font-size:16px;font-weight:700;color:var(--cp-text);">Execution Overview</div>
+                      <div class="panel-sub" id="cust-execution-res-subtitle" style="font-size:12px;color:var(--cp-text-dim);">Select a reservation to view its execution status.</div>
+                    </div>
+                  </div>
+
+                  <div class="panel-body" id="cust-execution-res-content" style="padding:20px;">
+                    <div id="cust-execution-empty-state"
+                      style="text-align:center;padding:48px 16px;color:var(--cp-text-dim);font-size:13px;">
+                      Choose an event from the left list to track deployment and schedule status.
+                    </div>
+
+                    <div id="cust-execution-upcoming-state" style="display:none;"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: MEETINGS ===================== -->
+        <div id="dash-tab-meetings" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">My Meetings</h1>
+                      </div>
+          <div class="cp-card" style="margin-bottom:20px;">
+            <div class="cp-card-hdr">
+              <div>
+                <div class="cp-card-title">Scheduled Meetings</div>
+                <div class="cp-card-sub">Your consultation and planning sessions</div>
+              </div>
+            </div>
+            <div class="cp-card-body">
+              <div id="customer-meetings-list" class="cp-res-list">
+                <div class="cp-res-empty">No meetings scheduled yet.</div>
+              </div>
+            </div>
+          </div>
+          <div class="cp-card">
+            <div class="cp-card-hdr">
+              <div>
+                <div class="cp-card-title">Office Location</div>
+                <div class="cp-card-sub">Visit us for physical consultations and food tastings</div>
+              </div>
+              <button class="cp-sb-btn cp-sb-btn-back" style="width:auto; padding:8px 16px; font-size:12px;"
+                onclick="window.open('https://maps.google.com','_blank')">Open in Maps &rarr;</button>
+            </div>
+            <div class="cp-card-body" style="padding-bottom:0;">
+              <div style="font-size:14px; font-weight:600; color:var(--cp-cream); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-map-marker-alt" style="color:var(--cp-gold);"></i>
+                18 Basilio St, Manila, Metro Manila
+              </div>
+              <div id="office-map"
+                style="height:320px; width:100%; background:var(--cp-bg3); border-radius:12px; border:1px solid var(--cp-border); overflow:hidden;"></div>
+              <div style="height:18px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: RESERVATION DETAILS ===================== -->
+        <div id="dash-tab-resdetails" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Reservation Details</h1>
+                      </div>
+
+          <!-- Selection bar -->
+          <div class="cp-sel-bar" style="display:flex; align-items:center; flex-wrap:wrap; gap:12px;">
+            <span class="cp-sel-lbl">Active Reservation</span>
+            <select id="resd-approved-selector" class="cp-sel-field" onchange="customerSelectReservation(this.value)">
+              <option value="">Select a confirmed reservation to manage</option>
+            </select>
+            <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-dim); cursor:pointer; user-select:none; white-space:nowrap;">
+              <input type="checkbox" id="c-chk-show-cancelled-res" onchange="initCustomerResDetails()" style="accent-color:var(--cp-gold); cursor:pointer;" />
+              Show Cancelled Reservations
+            </label>
+            <div id="resd-quick-status" style="display:flex; align-items:center; gap:8px;"></div>
+          </div>
+
+          <!-- Sub-tab bar -->
+          <div class="cp-subtabs">
+            <button class="cp-stab active" id="resd-tab-details" onclick="switchResDetailsTab('details',this)">Main Dashboard</button>
+            <button class="cp-stab" id="resd-tab-cancellation" onclick="switchResDetailsTab('cancellation',this)" style="display:none;">Cancellation Details</button>
+            <button class="cp-stab" id="resd-tab-timeline" onclick="switchResDetailsTab('timeline',this)">Logistics Timeline</button>
+            <button class="cp-stab" id="resd-tab-procurement" onclick="switchResDetailsTab('procurement',this)">Resource Preparation</button>
+            <button class="cp-stab" id="resd-tab-payment" onclick="switchResDetailsTab('payment',this)">Payment</button>
+            <button class="cp-stab" id="resd-tab-extra" onclick="switchResDetailsTab('extra',this)">Guest &amp; Seating</button>
+            <button class="cp-stab" id="resd-tab-design" onclick="switchResDetailsTab('design',this)">Design</button>
+            <button class="cp-stab" id="resd-tab-food" onclick="switchResDetailsTab('food',this)">Food Tasted</button>
+            <button class="cp-stab" id="resd-tab-rundown" onclick="switchResDetailsTab('rundown',this)">Final Rundown</button>
+            <button class="cp-stab" id="resd-tab-pictures" onclick="switchResDetailsTab('pictures',this)">Event Pictures</button>
+          </div>
+
+          <!-- Panes Container -->
+          <div class="resd-panes-container">
+
+            <!-- Main Dashboard Pane -->
+            <div id="resd-pane-details">
+              <div class="cp-card">
+                <div class="cp-card-hdr">
+                  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                    <div>
+                      <div class="cp-card-title" id="resd-title">Reservation Dashboard</div>
+                      <div class="cp-card-sub" id="resd-subtitle">Overview and details</div>
+                    </div>
+                    <div style="display:inline-flex; align-items:center; gap:8px; margin-left:12px;">
+                      <button type="button" class="cp-subtab-btn active" id="c-resd-inner-tab-dashboard" onclick="switchCustomerResdInnerTab('dashboard')" style="padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; background:none; border:none; border-bottom:2px solid var(--cp-gold, #c49a3c); color:var(--cp-gold, #c49a3c); border-radius:0; transition:all 0.2s;">Dashboard</button>
+                      <button type="button" class="cp-subtab-btn" id="c-resd-inner-tab-logs" onclick="switchCustomerResdInnerTab('logs')" style="padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; background:none; border:none; border-bottom:2px solid transparent; color:var(--cp-text-dim, #999); border-radius:0; transition:all 0.2s;">Logs</button>
+                    </div>
+                  </div>
+                  <div class="resd-action-btns-container" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button id="resd-export-btn" onclick="exportCustomerResQuotation()" style="padding:0 14px; height:36px; box-sizing:border-box; background:var(--cp-gold, #c49a3c); color:#ffffff; border:none; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:0.2s;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='';">
+                      Export Quotation
+                    </button>
+                    <button id="resd-modify-btn" onclick="modifyCustomerPackage()" style="padding:0 14px; height:36px; box-sizing:border-box; background:transparent; color:var(--cp-gold, #c49a3c); border:1px solid var(--cp-gold, #c49a3c); border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px; transition:0.2s;" onmouseover="this.style.background='rgba(196,154,60,0.1)';" onmouseout="this.style.background='transparent';">
+                      Modify
+                    </button>
+                    <!-- Customer Reservation Details: Cancellation Request Action Button (Direct Cancel button removed per requirements) -->
+                    <button id="resd-req-cancel-btn" onclick="toggleCustomerCancelRequest()" style="display:none; padding:0 14px; height:36px; box-sizing:border-box; background:#dc2626; color:#ffffff; border:none; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='#b91c1c';" onmouseout="this.style.background='#dc2626';">
+                      Cancel Reservation
+                    </button>
+                    <button id="resd-save-mod-btn" onclick="saveCustomerModifiedPackage()" style="display:none; padding:0 16px; height:36px; box-sizing:border-box; background:var(--cp-gold, #c49a3c); color:#1a1612; border:none; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; align-items:center; justify-content:center; gap:6px; transition:0.2s;" onmouseover="this.style.filter='brightness(1.1)';" onmouseout="this.style.filter='';">
+                      Save
+                    </button>
+                    <button id="resd-cancel-mod-btn" onclick="cancelCustomerPackageModification()" style="display:none; padding:0 16px; height:36px; box-sizing:border-box; background:transparent; color:var(--cp-text-dim, #888); border:1px solid var(--cp-border, rgba(255,255,255,0.15)); border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; align-items:center; justify-content:center; gap:6px; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';" onmouseout="this.style.background='transparent';">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <div class="cp-card-body" id="resd-content">
+                  <div style="text-align:center; padding:80px 20px; color:var(--cp-text-dim);">
+                    <div style="font-size:38px; margin-bottom:14px;"></div>
+                    <div style="font-size:15px; font-weight:600; color:var(--cp-text-mid);">No Reservation Selected</div>
+                    <div style="font-size:12.5px; margin-top:7px;">Choose an approved reservation from the dropdown above to view its full details.</div>
+                  </div>
+                </div>
+                <div class="cp-card-body" id="resd-customer-logs-content" style="display:none; padding:25px;">
+                  <div style="text-align:center; padding:50px 20px; color:var(--cp-text-dim);">Select a reservation to view logs.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Logistics Timeline Pane -->
+            <div class="cp-card" id="resd-pane-timeline" style="display:none;">
+              <div class="cp-card-hdr">
+                <div>
+                  <div class="cp-card-title"> Logistics Timeline</div>
+                  <div class="cp-card-sub">Operational execution status and activity logs</div>
+                </div>
+              </div>
+              <div class="cp-card-body">
+                <div id="resd-timeline-summary" style="font-size:12px; color:var(--cp-text-dim); margin-bottom:12px;">Select a reservation to load timeline view.</div>
+                <div id="resd-timeline-analytics" style="display:none; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:15px; margin-bottom:20px;"></div>
+                <div id="resd-timeline-milestones" style="display:flex; gap:15px; overflow-x:auto; padding-bottom:10px; margin-bottom:15px;"></div>
+                <div style="background:var(--cp-bg2); border-radius:12px; padding:16px; margin-bottom:16px;">
+                  <div id="resd-timeline-calendar"></div>
+                </div>
+                <div id="resd-timeline-activities" style="margin-bottom:22px;"></div>
+                <div class="cp-card" style="margin-bottom:18px; border-top:3px solid var(--cp-gold);">
+                  <div class="cp-card-hdr"><div><div class="cp-card-title"> Logging of Activities</div><div class="cp-card-sub">Official record of completed operational tasks</div></div></div>
+                  <div class="cp-card-body"><div id="resd-activity-logs" style="display:flex; flex-direction:column; gap:12px;"><div style="padding:15px; text-align:center; color:var(--cp-text-dim);">Loading activity logs</div></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Procurement Pane (Resource Preparation) -->
+            <div id="resd-pane-procurement" style="display:none;">
+              <div id="proc-analytics-container"></div>
+              <div class="procurement-grid" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:16px; align-items:start;">
+                <div class="proc-col cp-card" id="proc-col-food">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Dishes &amp; Ingredients</div><div class="cp-card-sub">Included in package</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-food-list"></div>
+                </div>
+                <div class="proc-col cp-card" id="proc-col-equipment">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Event Equipment <span id="proc-equip-assigned-badge" style="display:none;font-size:9px;color:var(--cp-green);font-weight:800;vertical-align:middle;">ASSIGNED</span></div><div class="cp-card-sub">Assets &amp; physical tools</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-equip-list"></div>
+                </div>
+                <div class="proc-col cp-card" id="proc-col-decoration">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Aesthetic &amp; Decor</div><div class="cp-card-sub">Themes &amp; props setup</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-decor-list"></div>
+                </div>
+                <div class="proc-col cp-card" id="proc-col-personnel">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Talent &amp; Personnel</div><div class="cp-card-sub">Coordinators &amp; staff</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-pers-list"></div>
+                </div>
+                <div class="proc-col cp-card" id="proc-col-staff">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Staff Allocation</div><div class="cp-card-sub">Assigned event staff</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-staff-list"></div>
+                </div>
+                <div class="proc-col cp-card" id="proc-col-transportation">
+                  <div class="cp-card-hdr">
+                    <div><div class="cp-card-title"> Transportation</div><div class="cp-card-sub">Logistics &amp; driver</div></div>
+                  </div>
+                  <div class="cp-card-body proc-col-body" id="proc-trans-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment Pane -->
+            <div id="resd-pane-payment" style="display:none;"></div>
+
+            <!-- Guest & Seating Pane -->
+            <div class="cp-card" id="resd-pane-extra" style="display:none;">
+              <div class="cp-card-hdr">
+                <div><div class="cp-card-title"> Guest &amp; Seating Management</div><div class="cp-card-sub">Manage your guest list and venue layout</div></div>
+              </div>
+              <div class="cp-card-body">
+                <div class="cp-two-col">
+                  <div class="cp-card" style="margin:0;">
+                    <div class="cp-card-hdr"><div class="cp-card-title">Guest List</div><button class="cp-btn-hub" style="padding:7px 13px;font-size:12px;" onclick="addGuestRow()">+ Add Row</button></div>
+                    <div class="cp-card-body"><div id="resd-guest-list"></div><button class="cp-btn-hub" style="margin-top:10px;padding:8px 16px;font-size:12px;" onclick="saveGuestList()">Save List</button></div>
+                  </div>
+                  <div class="cp-card" style="margin:0;">
+                    <div class="cp-card-hdr"><div class="cp-card-title">Seating Layout</div></div>
+                    <div class="cp-card-body">
+                      <div id="resd-seating-container" style="background:var(--cp-bg2);height:350px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--cp-text-dim);border:1.5px dashed var(--cp-border);">Layout will load here.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="resd-pane-design" style="display:none;"></div>
+            <div id="resd-pane-venue" style="display:none;">
+              <div id="resd-venue-content"></div>
+              <div id="resd-venue-map-container" style="display:none; margin-top:20px;">
+                <div id="resd-venue-map" style="height:350px; border-radius:14px; border:1px solid var(--cp-border);"></div>
+              </div>
+            </div>
+            <div id="resd-pane-food" style="display:none;"><div id="resd-food-content"></div></div>
+            <div id="resd-pane-pictures" style="display:none;"><div id="resd-pictures-content-cust"></div></div>
+            <div id="resd-pane-staff" style="display:none;"><div id="resd-staff-content"></div></div>
+            <div id="resd-pane-personnel" style="display:none;"><div id="resd-personnel-container"></div></div>
+
+            <!-- Final Rundown Pane -->
+            <div id="resd-pane-rundown" style="display:none;">
+              <div id="resd-rundown-content" style="display:flex; flex-direction:column; gap:26px;">
+                <div class="cp-res-empty" style="padding:56px 20px;">
+                  <div style="font-size:34px; margin-bottom:12px;"></div>
+                  <div style="font-size:13.5px; font-weight:600; color:var(--cp-text-mid);">No Final Rundown Generated Yet</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cancellation Details Pane -->
+            <div id="resd-pane-cancellation" style="display:none;">
+              <div id="c-resd-cancellation-content"></div>
+            </div>
+          </div><!-- /resd-panes-container -->
+        </div>
+
+        <!-- ===================== TAB: PAYMENTS ===================== -->
+        <div id="dash-tab-payments" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Payments</h1>
+            <p class="cp-hdr-sub">View your payment breakdown and pay online</p>
+          </div>
+          <div id="c-payments-list">
+            <div class="cp-res-empty" style="padding:48px;">
+              <div style="font-size:34px; margin-bottom:12px;"></div>
+              <div style="font-size:13.5px; font-weight:600; color:var(--cp-text-mid);">No payment records yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: CUSTOMER FEEDBACK ===================== -->
+        <div id="dash-tab-reviews" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">Customer Feedback</h1>
+                      </div>
+          <div id="c-reviews-list">
+            <div class="cp-res-empty" style="padding:48px;">
+              <div style="font-size:34px; margin-bottom:12px;"></div>
+              <div style="font-size:13.5px; font-weight:600; color:var(--cp-text-mid);">No ongoing or completed events yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================== TAB: NOTIFICATIONS ===================== -->
+        <div id="dash-tab-flags" class="cp-tab">
+          <div class="cp-hdr" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h1 class="cp-hdr-title" style="margin:0;">Notifications</h1>
+            <button id="btn-customer-seen-all" onclick="markAllCustomerFlagsSeen()" class="btn-primary" style="padding:6px 14px; font-size:12px; font-weight:700; background:var(--cp-gold, #c49a3c); border:none; border-radius:6px; cursor:pointer; color:#ffffff; transition:all 0.15s ease;">Seen All</button>
+          </div>
+          <div id="customer-flags-list">
+            <div class="cp-res-empty" style="padding:48px;">
+              <div style="font-size:34px; margin-bottom:12px;"></div>
+              <div style="font-size:13.5px; font-weight:600; color:var(--cp-text-mid);">No pending flags! Everything is on track.</div>
+            </div>
+          </div>
+          <div id="customer-flags-pagination" style="display:flex; justify-content:center; align-items:center; gap:12px; margin-top:20px;"></div>
+        </div>
+
+        <!-- ===================== TAB: PROFILE ===================== -->
+        <div id="dash-tab-profile" class="cp-tab">
+          <div class="cp-hdr">
+            <h1 class="cp-hdr-title">My Profile</h1>
+                      </div>
+
+          <div class="cp-two-col" style="margin-top:20px;">
+            <!-- Personal Details Card -->
+            <div class="cp-card">
+              <div class="cp-card-hdr">
+                <div>
+                  <div class="cp-card-title">Personal Details</div>
+                  <div class="cp-card-sub">Your registered name on file</div>
+                </div>
+                <button style="padding:6px 16px; font-size:12px; font-weight:700; background:var(--cp-gold, #c49a3c); color:#ffffff; border:none; border-radius:8px; cursor:pointer;" onclick="openEditPhoneModal()">Edit</button>
+              </div>
+              <div class="cp-card-body" style="display:flex; flex-direction:column; gap:16px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                  <div>
+                    <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">First Name</div>
+                    <div id="prof-fname" style="color:var(--cp-text); font-size:15px; font-weight:600;">—</div>
+                  </div>
+                  <div>
+                    <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Middle Name</div>
+                    <div id="prof-mname" style="color:var(--cp-text); font-size:15px; font-weight:600;">—</div>
+                  </div>
+                </div>
+                <div>
+                  <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Last Name</div>
+                  <div id="prof-lname" style="color:var(--cp-text); font-size:15px; font-weight:600;">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contact Information Card -->
+            <div class="cp-card">
+              <div class="cp-card-hdr">
+                <div>
+                  <div class="cp-card-title">Contact Information</div>
+                  <div class="cp-card-sub">Your account contact &amp; notification details</div>
+                </div>
+              </div>
+              <div class="cp-card-body" style="display:flex; flex-direction:column; gap:18px;">
+                <div>
+                  <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Email Address</div>
+                  <div id="prof-email" style="color:var(--cp-text); font-size:15px; font-weight:600;">—</div>
+                  <div style="font-size:11px; color:var(--cp-text-dim); margin-top:3px;">Verified login email</div>
+                </div>
+                <div style="border-top:1px solid var(--cp-border); padding-top:14px;">
+                  <div>
+                    <div style="color:var(--cp-gold); font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px;">Phone Number</div>
+                    <div id="prof-phone" style="color:var(--cp-text); font-size:15px; font-weight:600;">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden chat tab -->
+        <div id="dash-tab-chat" class="cp-tab"></div>
+
+      </div><!-- /cp-scroll -->
+    </div><!-- /cp-main -->
+  </div><!-- /cp-layout -->
+
+  <!-- ============================================================
+       SCRIPTS
+  ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL  = 'https://nukbdmyqizrnkmbusdtm.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51a2JkbXlxaXpybmttYnVzZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjM3NTQsImV4cCI6MjA5ODg5OTc1NH0.WlKtqa8hBxLedDHS7-q10yoPne6VTjt5F4E86vTA5eY';
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Secondary / Standby Supabase Client
+    window.SUPABASE_BACKUP_URL  = 'https://llngowrkbzefjdkktgfm.supabase.co';
+    window.SUPABASE_BACKUP_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsbmdvd3JrYnplZmpka2t0Z2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzE3MTAsImV4cCI6MjEwNzUwNzcxMH0.8IndBI2vVOeTsUwwzNd9zaIcO-M4toGRrtR-mlkUeO0';
+    try {
+      window.supabaseBackupClient = window.supabase.createClient(window.SUPABASE_BACKUP_URL, window.SUPABASE_BACKUP_ANON);
+    } catch (e) {
+      console.warn('[customer.html] Secondary Supabase client init warning:', e);
+    }
+  </script>
+  <script src="supabase_adapter.js?v=9"></script>
+
+  <script>
+    /* ===================== PORTAL BOOTSTRAP ===================== */
+
+    // Build decorative calendar cells
+    (function() {
+      const grid = document.getElementById('cp-cal-cells');
+      if (!grid) return;
+      const hl = [3, 9, 16, 17, 23];
+      for (let i = 1; i <= 35; i++) {
+        const d = document.createElement('div');
+        d.className = 'cp-cal-c' + (hl.includes(i) ? ' hl' : '');
+        d.textContent = i <= 31 ? i : '';
+        grid.appendChild(d);
+      }
+    })();
+
+    /* ---- TAB SWITCHING ---- */
+    function switchDashTab(name, el) {
+      document.querySelectorAll('.cp-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.cp-nav-item').forEach(n => n.classList.remove('active'));
+      const tab = document.getElementById('dash-tab-' + name);
+      if (tab) tab.classList.add('active');
+      if (el) { el.classList.add('active'); }
+      else { const n = document.getElementById('nav-' + name); if (n) n.classList.add('active'); }
+
+      if (typeof window.syncCustomerAIFabVisibility === 'function') {
+        window.syncCustomerAIFabVisibility(name);
+      } else {
+        const fab = document.getElementById('desk-ai-fab');
+        if (fab) {
+          const showFab = (name === 'resdetails') && !!window.customerModifyMode;
+          fab.style.display = showFab ? 'flex' : 'none';
+          if (!showFab && typeof window.closeDeskAI === 'function') window.closeDeskAI();
+        }
+      }
+
+      if (name === 'saved') {
+        if (typeof renderSavedReservations === 'function') renderSavedReservations();
+      }
+      if (name === 'execution-day') {
+        if (typeof renderCustomerExecutionDay === 'function') renderCustomerExecutionDay();
+      }
+      if (name === 'reviews') {
+        if (typeof renderCustomerReviews === 'function') renderCustomerReviews();
+      }
+      if (name === 'flags') {
+        if (typeof renderCustomerFlags === 'function') renderCustomerFlags();
+      }
+      if (name === 'payments') {
+        if (typeof renderCustomerPayments === 'function') {
+          renderCustomerPayments();
+        } else if (typeof renderPaymentTab === 'function') {
+          renderPaymentTab('c-payments-list');
+        }
+      }
+      if (typeof toggleCustomerMobileSidebar === 'function') {
+        toggleCustomerMobileSidebar(false);
+      }
+      if (name === 'calendar' && !window._calInit) {
+        setTimeout(() => {
+          if (typeof renderCustomerCalendar === 'function') {
+            renderCustomerCalendar();
+            window._calInit = true;
+          }
+        }, 80);
+      }
+    }
+
+    /* ---- RES DETAILS SUB-TABS ---- */
+    // NOTE: switchResDetailsTab is defined in app.js — do NOT redefine here.
+    // The full version in app.js handles pane visibility AND calls render functions for each tab.
+
+    // Init first pane visible
+    (function() {
+      document.querySelectorAll('.resd-panes-container > div').forEach((p, i) => { p.style.display = i === 0 ? '' : 'none'; });
+    })();
+
+    /* ---- MOBILE NAVIGATION DRAWER & SETTINGS DROPDOWN ---- */
+    function toggleCustomerMobileSidebar(open) {
+      const sb = document.querySelector('.cp-sidebar');
+      const bd = document.getElementById('cust-sidebar-backdrop');
+      if (sb) {
+        sb.classList.toggle('mobile-open', !!open);
+        if (open) {
+          sb.style.setProperty('top', '0px', 'important');
+          sb.style.setProperty('bottom', '0px', 'important');
+          sb.style.setProperty('left', '0px', 'important');
+          sb.style.setProperty('height', 'auto', 'important');
+          sb.style.setProperty('min-height', '0px', 'important');
+          sb.style.setProperty('border-radius', '0px', 'important');
+          sb.style.setProperty('border-bottom-left-radius', '0px', 'important');
+          sb.style.setProperty('border-bottom-right-radius', '0px', 'important');
+        }
+      }
+      if (bd) bd.classList.toggle('active', !!open);
+    }
+    window.toggleCustomerMobileSidebar = toggleCustomerMobileSidebar;
+
+    function toggleCustSettingsDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('cust-settings-menu');
+      if (menu) {
+        const isShowing = menu.style.display === 'block';
+        menu.style.display = isShowing ? 'none' : 'block';
+      }
+    }
+    window.toggleCustSettingsDropdown = toggleCustSettingsDropdown;
+
+    document.addEventListener('click', e => {
+      const menu = document.getElementById('cust-settings-menu');
+      const btn = document.getElementById('cust-settings-toggle-btn');
+      if (menu && menu.style.display === 'block') {
+        if (btn && btn.contains(e.target)) return;
+        if (!menu.contains(e.target)) menu.style.display = 'none';
+      }
+    });
+
+    /* ---- NOTIFICATIONS ---- */
+    function toggleNotifPanel() {
+      document.getElementById('dash-notif-panel')?.classList.toggle('on');
+    }
+    document.addEventListener('click', e => {
+      const p = document.getElementById('dash-notif-panel');
+      const b = document.getElementById('notif-btn-top');
+      if (p && b && !p.contains(e.target) && !b.contains(e.target)) p.classList.remove('on');
+    });
+
+    /* ---- CHAT ---- */
+    function toggleDashChat() {
+      if (typeof window.toggleDashChat === 'function' && window.toggleDashChat !== toggleDashChat) {
+        window.toggleDashChat();
+      } else {
+        const panel = document.getElementById('dash-chat-side-panel');
+        if (!panel) return;
+        const isOpen = panel.classList.contains('on') || panel.style.right === '0px';
+        if (isOpen) {
+          panel.classList.remove('on');
+          panel.style.right = '-100%';
+          if (window._dashChatPollInterval) {
+            clearInterval(window._dashChatPollInterval);
+            window._dashChatPollInterval = null;
+          }
+        } else {
+          panel.classList.add('on');
+          panel.style.right = '0px';
+          panel.style.setProperty('z-index', '10000005', 'important');
+          if (typeof initDashChat === 'function') initDashChat();
+        }
+      }
+    }
+
+    // Dismiss Customer Chat on outside click or touch
+    function handleDashChatOutsideDismiss(e) {
+      const panel = document.getElementById('dash-chat-side-panel');
+      if (!panel) return;
+      const isOpen = panel.classList.contains('on') || panel.style.right === '0px';
+      if (!isOpen) return;
+      if (panel.contains(e.target)) return;
+      if (e.target.closest('#cust-exec-live-chat-btn, .cp-btn-chat, [onclick*="toggleDashChat"]')) return;
+      toggleDashChat();
+    }
+    document.addEventListener('click', handleDashChatOutsideDismiss);
+    document.addEventListener('touchstart', handleDashChatOutsideDismiss, { passive: true });
+    function sendDashChatMessage() {
+      if (typeof window.sendDashChatMessage === 'function' && window.sendDashChatMessage !== sendDashChatMessage) {
+        window.sendDashChatMessage();
+      } else {
+        const inp = document.getElementById('dash-chat-input');
+        if (!inp || !inp.value.trim()) return;
+        inp.value = '';
+      }
+    }
+
+    /* ---- LOGOUT ---- */
+    function confirmLogOut() { document.getElementById('logout-overlay')?.classList.add('on'); }
+    function closeLogoutModal() { document.getElementById('logout-overlay')?.classList.remove('on'); }
+    function executeLogOut() {
+      localStorage.removeItem('halden_customer');
+      localStorage.removeItem('halden_logged_in');
+      localStorage.removeItem('halden_auto_open_dash');
+      localStorage.setItem('halden_user_type', '');
+      if (window.supabaseClient) {
+        window.supabaseClient.auth.signOut().catch(() => {}).finally(() => { window.location.href = 'index.html'; });
+      } else { window.location.href = 'index.html'; }
+    }
+
+    /* ---- GREETING & AVATAR ---- */
+    function setGreeting(name) {
+      const h = new Date().getHours();
+      const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+      const el = document.getElementById('res-greeting');
+      if (el) el.textContent = g + ', ' + (name || 'there') + '!';
+    }
+
+    /* ---- AUTH GUARD ---- */
+    function initCustomerPage(userData) {
+      window.currentUser = userData;
+      const name  = userData.displayName || userData.name || 'Customer';
+      const email = userData.email || '';
+      const n = document.getElementById('dash-user-name');
+      const e = document.getElementById('dash-user-email');
+      const a = document.getElementById('cp-ava-letter');
+      if (n) n.textContent = name;
+      if (e) e.textContent = email;
+      if (a) a.textContent = name.charAt(0).toUpperCase();
+      setGreeting(name.split(' ')[0]);
+      if (typeof renderProfileReservations  === 'function') renderProfileReservations();
+      if (typeof listenForDirectives         === 'function') listenForDirectives();
+      if (typeof listenToCustomerChat        === 'function') listenToCustomerChat();
+      if (typeof initCustomerMeetingListener === 'function') initCustomerMeetingListener();
+      if (typeof handleCustomerHashNavigation === 'function') handleCustomerHashNavigation();
+    }
+
+    const isPaymentReturn = window.location.search.includes('payment=');
+    const storedCustomer = localStorage.getItem('halden_customer');
+    if (storedCustomer) {
+      try {
+        const p = JSON.parse(storedCustomer);
+        if (p && p.email) {
+          initCustomerPage({ displayName: p.name || 'Customer', email: p.email, uid: p.uid || p.id || '' });
+        } else if (isPaymentReturn) {
+          initCustomerPage({ displayName: 'Customer', email: '', uid: '' });
+        } else { window.location.href = 'index.html'; }
+      } catch {
+        if (isPaymentReturn) {
+          initCustomerPage({ displayName: 'Customer', email: '', uid: '' });
+        } else { window.location.href = 'index.html'; }
+      }
+    } else {
+      window.supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const u = session.user;
+          initCustomerPage({ displayName: u.user_metadata?.full_name || 'Customer', email: u.email, uid: u.id });
+        } else if (isPaymentReturn) {
+          initCustomerPage({ displayName: 'Customer', email: '', uid: '' });
+        } else { window.location.href = 'index.html'; }
+      });
+    }
+
+    function customerSignOut() { executeLogOut(); }
+    window.customerSignOut = customerSignOut;
+  </script>
+
+  <!-- VIDEO CONFERENCE FLOATING WINDOW (CUSTOMER) -->
+  <div id="vcall-overlay" class="vcall-pip" style="display:none;">
+    <!-- Drag handle / header -->
+    <div id="vcall-pip-header" class="vcall-pip-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="status-online"></span>
+        <span style="font-weight:700;font-size:12px;color:#e8edf2;">Live Consultation</span>
+        <span id="vcall-participant-count" style="font-size:10px;color:#4a6070;"></span>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button class="vcall-pip-ctrl" title="Minimize" onclick="minimizeVideoCall()">&#8212;</button>
+        <button class="vcall-pip-ctrl vcall-pip-ctrl-red" title="Leave Call" onclick="leaveVideoRoom()">&#x2715;</button>
+      </div>
+    </div>
+
+    <!-- Video grid -->
+    <div id="vcall-active-room" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="vcall-video-grid" style="flex:1;display:grid;gap:6px;padding:8px;overflow:hidden;align-content:center;justify-content:center;background:#080c10;transition:grid-template-columns 0.3s;">
+        <div id="vcall-empty-msg" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#4a6070;">
+          <p style="font-size:11px;letter-spacing:1px;">Connecting to room&hellip;</p>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div id="vcall-controls" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 12px;background:#0f1419;border-top:1px solid #1e2a35;flex-shrink:0;">
+        <button id="vcall-btn-mic" onclick="vcallToggleMic()" title="Mute/Unmute" style="width:38px;height:38px;border-radius:10px;border:none;background:#161d25;color:#ffffff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">Mic</button>
+        <button id="vcall-btn-cam" onclick="vcallToggleCam()" title="Camera On/Off" style="width:38px;height:38px;border-radius:10px;border:none;background:#161d25;color:#ffffff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">Cam</button>
+        <button id="vcall-btn-screen" onclick="vcallToggleScreen()" title="Share Screen" style="width:38px;height:38px;border-radius:10px;border:none;background:#161d25;color:#ffffff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">Share</button>
+        <button onclick="maximizeVideoCall()" title="Expand" style="width:38px;height:38px;border-radius:10px;border:none;background:#161d25;color:#ffffff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">&#x2922;</button>
+      </div>
+    </div>
+
+    <!-- Minimized state -->
+    <div id="vcall-minimized-bar" style="display:none;align-items:center;justify-content:space-between;padding:8px 12px;background:#0f1419;">
+      <div style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;">
+        <span class="status-online"></span> Call Active
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="vcall-pip-ctrl" onclick="maximizeVideoCall()">&#9650; Expand</button>
+        <button class="vcall-pip-ctrl vcall-pip-ctrl-red" onclick="leaveVideoRoom()">&#x2715;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER LIVE EXECUTION DAY PANEL (VIEW MODE ONLY) -->
+  <div id="cust-exec-live-overlay"
+    style="display:none; position:fixed; inset:0; top:0; left:0; right:0; bottom:0; z-index:9999999; background:var(--cp-bg, #faf8f4); flex-direction:column; overflow:hidden; margin:0; padding:0; border:none; border-radius:0; box-sizing:border-box;">
+
+    <!-- Top bar -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; width:100%; max-width:100%; box-sizing:border-box; background:var(--cp-sidebar, #ffffff); border-bottom:1px solid var(--cp-border); flex-shrink:0; z-index:100;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button onclick="closeCustomerExecLivePanel()"
+          style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;background:#4b5563;color:#ffffff;font-size:12px;font-weight:700;cursor:pointer;"
+          title="Back to Execution Day tab">
+          Back
+        </button>
+        <div style="padding-left:6px;">
+          <div id="cust-exec-live-title" style="font-size:18px;font-weight:800;color:var(--cp-text, #111827);">
+            Live Execution Day
+          </div>
+          <div id="cust-exec-live-subtitle" style="font-size:11px;color:var(--cp-gold, #855800);margin-top:2px;letter-spacing:0.5px;text-transform:uppercase;font-weight:700;">
+            View Mode &middot; Real-time GPS Tracking
+          </div>
+        </div>
+      </div>
+      <!-- Right controls: ONLY Live Chat button -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="cust-exec-live-chat-btn" onclick="toggleDashChat()"
+          style="background:#eab308;border:none;color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.35);padding:9px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:800;display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-comments"></i>
+          <span>Live Chat</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area: Map on top, phases and logs -->
+    <div style="display:flex; flex:1; width:100%; max-width:100%; overflow:hidden; position:relative; box-sizing:border-box;">
+      <div style="display:flex; flex:1; width:100%; max-width:100%; box-sizing:border-box; flex-direction:column; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 20px; gap:16px;">
+
+        <!-- Real-time Map tracking Admin's location (Customer GPS is never opened) -->
+        <div style="background:var(--cp-sidebar, #ffffff);border:1px solid var(--cp-border);border-radius:14px;overflow:hidden;flex-shrink:0;">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--cp-border);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;font-weight:800;color:var(--cp-gold, #855800);text-transform:uppercase;letter-spacing:1px;">
+              Live Transit &amp; Venue Map
+            </div>
+            <div id="cust-exec-live-status-txt" style="font-size:11px;font-weight:600;color:var(--cp-text-mid, #4b5563);">
+              Tracking team in real-time
+            </div>
+          </div>
+          <div id="cust-exec-live-map" style="width:100%;height:340px;background:#1a1d20;"></div>
+        </div>
+
+        <!-- 5 Execution Phases (View Mode Only) -->
+        <div style="background:var(--cp-sidebar, #ffffff);border:1px solid var(--cp-border);border-radius:14px;padding:16px 20px;">
+          <div style="font-size:11px;font-weight:800;color:var(--cp-gold, #855800);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+            Execution Phases
+          </div>
+          <div id="cust-exec-phases-container" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Active Operational Phase Details Card (Tasks & Program Flow) -->
+        <div id="cust-exec-active-phase-card" style="display:none;margin-bottom:20px;"></div>
+
+        <!-- Activity Logs (View Mode Only for all phases) -->
+        <div style="background:var(--cp-sidebar, #ffffff);border:1px solid var(--cp-border);border-radius:14px;padding:18px 20px;margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:800;color:var(--cp-gold, #855800);text-transform:uppercase;letter-spacing:1px;">
+              Phase Activity Logs
+            </div>
+            <div style="font-size:11px;font-weight:600;color:var(--cp-text-mid, #4b5563);">
+              Real-time feed
+            </div>
+          </div>
+          <div id="cust-exec-logs-container" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER COMPLETION FEEDBACK MODAL -->
+  <div id="cust-exec-congrats-modal"
+    style="display:none;position:fixed;inset:0;z-index:1000000;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--cp-sidebar, #ffffff);border:1px solid var(--cp-border);border-radius:16px;padding:32px 28px;max-width:480px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.25);">
+      <div style="font-size:22px;font-weight:800;color:var(--cp-gold, #855800);margin-bottom:12px;line-height:1.3;">
+        Congratulations on a Successful Event!
+      </div>
+      <div style="font-size:14px;font-weight:500;color:var(--cp-text, #111827);line-height:1.6;margin-bottom:24px;">
+        Please give us your thoughts and feedback as it is greatly appreciated, thank you for trusting us.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="exportCustomerExecutionSummaryPdf()" class="btn-secondary"
+          style="flex:1;min-width:160px;padding:12px 16px;background:#4b5563;color:#ffffff;font-weight:700;font-size:13px;border:none;border-radius:10px;cursor:pointer;">
+          Export Summary (PDF)
+        </button>
+        <button onclick="closeCustExecCongratsAndRedirect()" class="btn-primary"
+          style="flex:1;min-width:160px;padding:12px 20px;background:var(--cp-gold, #c49a3c);color:#ffffff;font-weight:800;font-size:14px;border:none;border-radius:10px;cursor:pointer;">
+          Back to Details
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      if (typeof emailjs !== 'undefined') {
+        emailjs.init("rKo0nYgSSEaf_NUMH");
+      }
+    })();
+  </script>
+  <script src="theme.js?v=3"></script>
+  <script src="notifications.js?v=3"></script>
+  <script src="app.js?v=91" charset="UTF-8"></script>
+  <!-- CONFIRM REMOVE AUTO-ALLOCATED EQUIPMENT MODAL -->
+  <div id="confirm-remove-auto-equip-overlay" class="modal-overlay" onclick="closeConfirmRemoveAutoEquipModal()" style="z-index:10060; display:none;"></div>
+  <div id="confirm-remove-auto-equip-modal" class="map-modal" style="max-width:440px; background:#231a12; border:1px solid #cba153; z-index:10061; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7); text-align:center;">
+    <div class="map-body" style="padding:28px 24px 20px; font-size:15px; line-height:1.6; color:#ffffff; font-weight:500; background:#231a12;">
+      <input type="hidden" id="remove-auto-equip-target-id" value="" />
+      <div style="font-size:16px; font-weight:700; color:#cba153; margin-bottom:12px; font-family:'Times New Roman', serif;">Notice on Allocated Equipment</div>
+      Are you absolutely sure? Because that equipment was allocated to your reservation for a proper catering service.
+    </div>
+    <div style="padding:16px 20px 24px; display:flex; justify-content:center; gap:16px; background:#231a12;">
+      <button type="button" class="btn-primary" onclick="confirmRemoveAutoEquipYes()" style="padding:10px 28px; font-weight:700; border-radius:50px; background:#dc2626; color:#ffffff; border:none; cursor:pointer; min-width:90px;">Yes</button>
+      <button type="button" class="btn-primary" onclick="closeConfirmRemoveAutoEquipModal()" style="padding:10px 28px; font-weight:700; border-radius:50px; background:#cba153; color:#1a1612; border:none; cursor:pointer; min-width:90px;">No</button>
+    </div>
+  </div>
+
+  <!-- MAP MODAL FOR CUSTOMER -->
+  <div id="map-overlay" class="modal-overlay" onclick="closeMapModal()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:10050;"></div>
+  <div id="map-modal" class="map-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:10051; max-width:550px; width:92%; background:var(--cp-bg2, #18120c); border:1px solid var(--cp-gold, #c49a3c); border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,0.7); overflow:hidden;">
+    <div class="map-hdr" style="padding:16px 20px; border-bottom:1px solid var(--cp-border, rgba(180,140,60,0.25)); display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="map-title-row">
+        <div class="map-ttl" style="font-size:16px; font-weight:800; color:var(--cp-gold, #c49a3c);">Choose Location</div>
+        <p class="map-instruction" style="font-size:12px; color:var(--cp-text-dim, #9a8a7c); margin:4px 0 0;">Please input the address and press Enter (catering service is within NCR)</p>
+      </div>
+      <button class="map-x" onclick="closeMapModal()" style="background:none; border:none; color:var(--cp-text-dim, #9a8a7c); font-size:20px; cursor:pointer; line-height:1;">&times;</button>
+    </div>
+    <div class="map-body" style="padding:16px 20px;">
+      <div class="map-search-row" style="display:flex; gap:10px; margin-bottom:12px;">
+        <input type="text" id="map-search-input" placeholder="Search for an address e.g. Quezon City..." onkeydown="if(event.key==='Enter'){event.preventDefault();searchLocation();}" style="flex:1; padding:8px 12px; background:var(--cp-bg3, #221a12); border:1px solid var(--cp-border, rgba(180,140,60,0.3)); border-radius:8px; color:var(--cp-text, #fff); font-size:13px;" />
+        <button class="btn-map-search" onclick="searchLocation()" style="padding:8px 16px; background:var(--cp-gold, #c49a3c); color:#1a1612; font-weight:700; border:none; border-radius:8px; cursor:pointer;">Search</button>
+      </div>
+      <div id="leaflet-map" style="width:100%; height:300px; border-radius:10px; background:var(--cp-bg3, #221a12); z-index:1;"></div>
+    </div>
+    <div class="map-ftr" style="padding:12px 20px 16px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--cp-border, rgba(180,140,60,0.25));">
+      <button class="btn-remove-map" onclick="removeLocation()" style="padding:8px 18px; background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:8px; font-weight:700; cursor:pointer; font-size:12px;">Remove Location</button>
+      <button class="btn-confirm-map" onclick="confirmLocation()" style="padding:8px 22px; background:var(--cp-gold, #c49a3c); color:#1a1612; font-weight:700; border:none; border-radius:8px; cursor:pointer; font-size:12px;">Confirm Location</button>
+    </div>
+  </div>
+
+  <!-- CUSTOM EVENT DATE CALENDAR MODAL (CUSTOMER) -->
+  <div id="custom-event-date-backdrop" class="custom-event-cal-backdrop" onclick="closeCustomEventDateCalendarModal()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:10050;"></div>
+  <div id="custom-event-date-modal" class="custom-event-cal-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:10051; max-width:780px; width:94%; background:var(--cp-bg2, #18120c); border:1px solid var(--cp-gold, #c49a3c); border-radius:14px; box-shadow:0 12px 40px rgba(0,0,0,0.7); overflow:hidden; padding:20px;" role="dialog" aria-modal="true" aria-labelledby="custom-cal-month-year">
+    <div class="custom-cal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div class="custom-cal-nav-left">
+        <button type="button" class="btn-cal-arrow" id="btn-custom-cal-prev" onclick="navCustomEventCalendar(-1)" title="Previous Month" style="background:var(--cp-bg3, #221a12); border:1px solid var(--cp-border, rgba(180,140,60,0.25)); color:var(--cp-text, #fff); border-radius:6px; width:30px; height:30px; cursor:pointer; font-weight:bold;">&lt;</button>
+      </div>
+      <div class="custom-cal-title" id="custom-cal-month-year" style="display:flex; align-items:center; justify-content:center; gap:8px; font-weight:800; font-size:16px;">
+        <select id="custom-cal-month-select" class="custom-cal-select custom-cal-month-select" onchange="onCustomCalSelectChange()" aria-label="Select month">
+          <option value="0">January</option>
+          <option value="1">February</option>
+          <option value="2">March</option>
+          <option value="3">April</option>
+          <option value="4">May</option>
+          <option value="5">June</option>
+          <option value="6">July</option>
+          <option value="7">August</option>
+          <option value="8">September</option>
+          <option value="9" selected>October</option>
+          <option value="10">November</option>
+          <option value="11">December</option>
+        </select>
+        <select id="custom-cal-year-select" class="custom-cal-select custom-cal-year-select" onchange="onCustomCalSelectChange()" aria-label="Select year">
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+        <option value="2029">2029</option>
+        <option value="2030">2030</option>
+        <option value="2031">2031</option>
+        <option value="2032">2032</option>
+        <option value="2033">2033</option>
+        <option value="2034">2034</option>
+        <option value="2035">2035</option>
+        <option value="2036">2036</option>
+        <option value="2037">2037</option>
+        <option value="2038">2038</option>
+        <option value="2039">2039</option>
+        <option value="2040">2040</option>
+        <option value="2041">2041</option>
+        <option value="2042">2042</option>
+        <option value="2043">2043</option>
+        <option value="2044">2044</option>
+        <option value="2045">2045</option>
+        <option value="2046">2046</option>
+        <option value="2047">2047</option>
+        <option value="2048">2048</option>
+        <option value="2049">2049</option>
+        <option value="2050">2050</option>
+        <option value="2051">2051</option>
+        <option value="2052">2052</option>
+        <option value="2053">2053</option>
+        <option value="2054">2054</option>
+        <option value="2055">2055</option>
+        <option value="2056">2056</option>
+        <option value="2057">2057</option>
+        <option value="2058">2058</option>
+        <option value="2059">2059</option>
+        <option value="2060">2060</option>
+        <option value="2061">2061</option>
+        <option value="2062">2062</option>
+        <option value="2063">2063</option>
+        <option value="2064">2064</option>
+        <option value="2065">2065</option>
+        <option value="2066">2066</option>
+        <option value="2067">2067</option>
+        <option value="2068">2068</option>
+        <option value="2069">2069</option>
+        <option value="2070">2070</option>
+        <option value="2071">2071</option>
+        <option value="2072">2072</option>
+        <option value="2073">2073</option>
+        <option value="2074">2074</option>
+        <option value="2075">2075</option>
+        <option value="2076">2076</option>
+        </select>
+      </div>
+      <div class="custom-cal-nav-right" style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="btn-cal-arrow" id="btn-custom-cal-next" onclick="navCustomEventCalendar(1)" title="Next Month" style="background:var(--cp-bg3, #221a12); border:1px solid var(--cp-border, rgba(180,140,60,0.25)); color:var(--cp-text, #fff); border-radius:6px; width:30px; height:30px; cursor:pointer; font-weight:bold;">&gt;</button>
+        <button type="button" class="btn-cal-close" onclick="closeCustomEventDateCalendarModal()" title="Close" style="background:none; border:none; color:var(--cp-text-dim, #9a8a7c); font-size:22px; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+    </div>
+
+    <div class="custom-cal-notice-banner" style="background:rgba(196,154,60,0.08); border:1px solid rgba(196,154,60,0.3); border-radius:8px; padding:8px 12px; font-size:11.5px; color:var(--cp-text-mid, #d5c8be); margin-bottom:12px; text-align:center;">
+      We can serve up to 3 reservations per day, so don't hesitate to book your reservation on a day that has other events!
+    </div>
+
+    <div class="custom-cal-legend" style="display:flex; justify-content:center; gap:12px; margin-bottom:12px; font-size:11px; flex-wrap:wrap;">
+      <span class="cal-leg-item"><span class="cal-leg-dot leg-avail"></span> Available</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot leg-booked"></span> Has Events (1-2)</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot leg-full"></span> Locked (3/3 Full)</span>
+      <span class="cal-leg-item"><span class="cal-leg-dot leg-disabled"></span> Unavailable</span>
+    </div>
+
+    <div class="custom-cal-days-header" style="display:grid; grid-template-columns:repeat(7, 1fr); text-align:center; font-weight:700; font-size:11px; color:var(--cp-gold, #c49a3c); margin-bottom:6px;">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+
+    <div class="custom-cal-grid" id="custom-cal-days-grid" style="display:grid; grid-template-columns:repeat(7, 1fr); gap:4px;">
+      <!-- Populated dynamically by app.js -->
+    </div>
+  </div>
+
+  <!-- DESKTOP: AI Floating Button -->
+  <button class="desk-ai-fab" id="desk-ai-fab" onclick="toggleDeskAI()" style="display:none; z-index:99990;">
+    AI Planner
+    <div class="ai-notif" id="ai-notif-desk"></div>
+  </button>
+
+  <!-- DESKTOP: AI Window Overlay -->
+  <div class="desk-ai-overlay" id="desk-ai-overlay" onclick="closeDeskAI()"></div>
+
+  <!-- DESKTOP: Floating AI Chat Window -->
+  <div class="desk-ai-window" id="desk-ai-window">
+    <div class="daw-hdr">
+      <div class="daw-hdr-left">
+        <div class="ai-ava"></div>
+        <div>
+          <div class="ai-name">Halden's AI Planner</div>
+          <div class="ai-status">
+            <div class="ai-dot"></div>Ready to assist
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="btn-see-convs locked" id="btn-see-convs-desk" onclick="toggleAIConvsView('desk')" title="Log in and start a conversation to view chat history">See Conversations</button>
+        <button class="daw-close" onclick="closeDeskAI()" aria-label="Close AI Planner">&times;</button>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS HISTORY LIST PANEL (Hidden by default) -->
+    <div class="ai-convs-panel" id="ai-convs-panel-desk" style="display:none;">
+      <div class="ai-convs-hdr">
+        <div class="ai-convs-title" id="ai-convs-title-desk">Conversations (0/5)</div>
+        <button class="btn-back-chat" onclick="toggleAIConvsView('desk')">Back to Chat &rarr;</button>
+      </div>
+      <div class="ai-convs-items" id="ai-convs-items-desk"></div>
+      <div class="ai-convs-ftr">
+        <button class="btn-new-conv" id="btn-new-conv-desk" onclick="startNewAIConversation('desk')">+ New Conversation</button>
+      </div>
+    </div>
+
+    <!-- MAIN CHAT BODY PANEL -->
+    <div class="ai-chat-body" id="ai-chat-body-desk" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="daw-context-bar" id="daw-context-bar"></div>
+      <div class="ai-msgs" id="ai-msgs-desk" style="flex:1;overflow-y:auto;"></div>
+      <div class="ai-chips" id="ai-chips-desk">
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Show best sellers</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Filter Filipino foods</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Birthday for 50 guests</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Wedding reception</span>
+      </div>
+      <div class="ai-inp-row">
+        <textarea class="ai-inp" id="ai-inp-desk" placeholder="Describe your event or ask about your package..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('desk');}"
+          oninput="ar(this)"></textarea>
+        <button class="ai-send" id="ai-send-desk" onclick="sendMsg('desk')" aria-label="Send message">&#10148;</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
