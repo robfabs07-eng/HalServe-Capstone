@@ -1,0 +1,2687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <!-- ================================================================
+       HARD REDIRECT LOOP BREAKER
+  ================================================================ -->
+  <script>
+    (function() {
+      try {
+        var now = Date.now();
+        var raw = sessionStorage.getItem('_hard_loop_guard');
+        var loads = raw ? JSON.parse(raw) : [];
+        loads = loads.filter(function(t) { return now - t < 2500; });
+        loads.push(now);
+        sessionStorage.setItem('_hard_loop_guard', JSON.stringify(loads));
+        if (loads.length >= 3) {
+          localStorage.clear();
+          sessionStorage.clear();
+          document.write('<div style="padding:50px;font-family:sans-serif;color:white;background:#1a1a1a;height:100vh;">' +
+            '<h2>Loop Detected & Blocked!</h2>' +
+            '<p>Your browser had corrupted login data which caused an infinite redirect loop.</p>' +
+            '<p>We have cleared the corrupted data.</p>' +
+            '<a href="index.html" style="color:#c49a3c;font-size:18px;text-decoration:underline;">Click here to return to the homepage</a>' +
+            '</div>');
+          window.stop();
+        }
+      } catch(e) {}
+    })();
+  </script>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halden's Event Management and Catering Service</title>
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+
+
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+ 
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+ 
+  <link rel="icon" type="image/png" href="haldens_logo.png" />
+<link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=28" />
+  <link rel="stylesheet" href="auth-prompt-styles.css" />
+  <style>
+    /* Dark mode calendar meeting & event text color fix */
+    [data-theme="dark"] .fc-event,
+    [data-theme="dark"] .fc-event *,
+    [data-theme="dark"] .fc-event-title,
+    [data-theme="dark"] .fc-event-time,
+    [data-theme="dark"] #public-calendar .fc-event,
+    [data-theme="dark"] #public-calendar .fc-event * {
+      color: #ffffff !important;
+    }
+    @media (max-width: 768px) {
+      [data-theme="dark"] .fc-event,
+      [data-theme="dark"] .fc-event *,
+      [data-theme="dark"] #public-calendar .fc-event,
+      [data-theme="dark"] #public-calendar .fc-event * {
+        color: #ffffff !important;
+      }
+    }
+  </style>
+  <!-- Leaflet Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- FOUC prevention: apply saved theme before first paint -->
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('halden_theme') || 'dark');</script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="theme.js"></script>
+</head>
+
+<body>
+
+  <!-- LOGIN/GUEST PROMPT MODAL -->
+  <div class="auth-prompt-overlay" id="authPromptModal">
+    <div class="auth-prompt-modal">
+      <div class="auth-diamond-bg">
+        <svg class="corner top-left" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M10,10 Q40,20 60,60 Q20,40 10,10"/><circle cx="30" cy="30" r="4"/><circle cx="55" cy="20" r="2.5"/><circle cx="20" cy="55" r="2.5"/></svg>
+        <svg class="corner top-right" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M90,10 Q60,20 40,60 Q80,40 90,10"/><circle cx="70" cy="30" r="4"/><circle cx="45" cy="20" r="2.5"/><circle cx="80" cy="55" r="2.5"/></svg>
+        <svg class="corner bottom-left" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M10,90 Q40,80 60,40 Q20,60 10,90"/><circle cx="30" cy="70" r="4"/><circle cx="55" cy="80" r="2.5"/><circle cx="20" cy="45" r="2.5"/></svg>
+        <svg class="corner bottom-right" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M90,90 Q60,80 40,40 Q80,60 90,90"/><circle cx="70" cy="70" r="4"/><circle cx="45" cy="80" r="2.5"/><circle cx="80" cy="45" r="2.5"/></svg>
+      </div>
+      
+      <div class="auth-prompt-content-wrapper">
+        <div class="auth-prompt-header">
+          <svg class="modal-crown" viewBox="0 0 64 64" fill="var(--gold)" width="48" height="48" style="margin-bottom: 8px; filter: drop-shadow(0 2px 8px rgba(196,154,60,0.3));">
+            <path d="M32 14 l8 16 l16 -6 l-8 22 h-32 l-8 -22 l16 6 z"/>
+            <circle cx="32" cy="10" r="4.5"/>
+            <circle cx="8" cy="20" r="3.5"/>
+            <circle cx="56" cy="20" r="3.5"/>
+            <rect x="18" y="48" width="28" height="4"/>
+          </svg>
+          <h2>Welcome to Halden's</h2>
+          <p style="color: var(--gold-light);">Choose how you'd like to continue</p>
+        </div>
+
+        <div class="modal-divider">
+          <div class="line"></div><div class="diamond"></div><div class="line"></div>
+        </div>
+
+        <div class="auth-prompt-content">
+          <div class="auth-option">
+            <button class="auth-btn primary" onclick="continueAsGuest()">
+              <div class="auth-btn-text">
+                <strong>Continue as Guest</strong>
+                <small>Browse our services without an account</small>
+              </div>
+            </button>
+          </div>
+
+          <div class="auth-option">
+            <button class="auth-btn secondary" onclick="goToLogin()">
+              <div class="auth-btn-text">
+                <strong>I Have an Account</strong>
+                <small>Sign in to access all features</small>
+              </div>
+            </button>
+          </div>
+          
+          <div class="modal-divider" style="margin: 12px 0 4px;">
+            <div class="line"></div><div class="diamond"></div><div class="line"></div>
+          </div>
+
+          <div class="auth-disclaimer">
+            <p>Important: You must be logged in to make reservations.<br>Guest users can browse services but cannot book events.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Deferred stubs: app.js loads late, these ensure onclick buttons work immediately -->
+  <script>
+    function continueAsGuest() {
+      if (window._continueAsGuestReady) return window._continueAsGuestReady();
+      document.addEventListener('app-ready', function() { window.continueAsGuest && window.continueAsGuest(); }, { once: true });
+    }
+    function goToLogin() {
+      if (window._goToLoginReady) return window._goToLoginReady();
+      document.addEventListener('app-ready', function() { window.goToLogin && window.goToLogin(); }, { once: true });
+    }
+    function downloadHaldenApp() {
+      const gdriveUrl = 'https://drive.google.com/uc?export=download&id=1-9qu-Ghp4CJjYbuXZBxFsxLLwZFeyixf';
+      const a = document.createElement('a');
+      a.href = gdriveUrl;
+      a.setAttribute('download', 'Hal.Serve.apk');
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    function openDownloadAppModal() {
+      downloadHaldenApp();
+    }
+    function closeDownloadAppModal() {
+      const m = document.getElementById('download-app-modal');
+      if (m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+    }
+    function confirmDownloadApp() {
+      downloadHaldenApp();
+      closeDownloadAppModal();
+    }
+    window.downloadHaldenApp = downloadHaldenApp;
+    window.openDownloadAppModal = openDownloadAppModal;
+    window.closeDownloadAppModal = closeDownloadAppModal;
+    window.confirmDownloadApp = confirmDownloadApp;
+  </script>
+
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo" onclick="go('#hero')">
+      <div class="nav-logo-icon" style="background:none; border:none; padding:0; overflow:hidden; border-radius:50%; width:80px; height:80px; flex-shrink:0;">
+        <img src="https://res.cloudinary.com/dg8ytmck5/image/upload/v1787591288/halden_logo_bgzhdu.png" alt="Halden's Logo" style="width:100%; height:100%; object-fit:cover;" />
+      </div>
+      <div class="logo-text">
+        <span class="logo-main">Hal'Serve</span>
+        <span class="logo-sub" style="font-size:9px; letter-spacing:1px;">Halden's Catering Services</span>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <span class="nav-link" onclick="go('#hero')">Home</span>
+<span class="nav-link" onclick="go('#packages')">Packages</span>
+      <div class="dropdown">
+        <span class="nav-link dropdown-toggle" onclick="go('#full-catalog')">
+          Catalog
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </span>
+        <div class="dropdown-menu">
+          <span class="dropdown-item" onclick="jumpFullCat('food')"><span class="di-icon"></span>Food &amp;
+            Dishes</span>
+          <span class="dropdown-item" onclick="jumpFullCat('dessert')"><span class="di-icon"></span>Desserts</span>
+          <span class="dropdown-item" onclick="jumpFullCat('drink')"><span class="di-icon"></span>Drinks</span>
+          <span class="dropdown-item" onclick="jumpFullCat('decoration')"><span
+              class="di-icon"></span>Decorations</span>
+          <span class="dropdown-item" onclick="jumpFullCat('equipment')"><span class="di-icon"></span>Equipment &amp;
+            Setup</span>
+          <span class="dropdown-item" onclick="jumpFullCat('entertainment')"><span class="di-icon"></span>Add-ons</span>
+
+          <span class="dropdown-item" onclick="jumpFullCat('all')"><span class="di-icon"></span>View All</span>
+        </div>
+      </div>
+            <span class="nav-link" onclick="go('#event-calendar')"> Calendar</span>
+      <span class="nav-link" onclick="openCustomPanel()">Make a reservation?</span>
+      <span class="nav-link" id="nav-policies-btn" onclick="openPoliciesModal()" style="cursor:pointer;">Policies</span>
+      <span class="nav-link" id="nav-download-app-btn" onclick="downloadHaldenApp()" style="cursor:pointer;">Download App</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px; margin-right: -1.5vw;">
+      <div class="dropdown" style="margin-left: 8px;">
+        <button class="dropdown-toggle nav-settings-btn" aria-label="Account" onclick="this.parentElement.classList.toggle('open'); event.stopPropagation();">
+           <!-- Three dashed menu icon -->
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+             <line x1="3" y1="12" x2="21" y2="12"></line>
+             <line x1="3" y1="6" x2="21" y2="6"></line>
+             <line x1="3" y1="18" x2="21" y2="18"></line>
+           </svg>
+           <!-- User avatar icon (wrapped in a filled circle for emphasis) -->
+           <div class="nav-avatar-icon">
+             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+           </div>
+        </button>
+        <div class="dropdown-menu nav-settings-menu" style="right: 0; left: auto; top: 45px; min-width: 230px; padding: 12px; cursor: default;">
+           <!-- DISPLAY GROUP -->
+           <div style="display:flex; flex-direction:column; gap:6px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(196,154,60,0.3);">
+             <span class="dropdown-item theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" style="display:flex; align-items:center; justify-content:space-between; gap:8px; cursor: pointer;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="theme-icon" style="margin:0;"></span><span class="theme-label">Dark Mode</span>
+                </div>
+             </span>
+             
+             <!-- SCALE BUTTON -->
+             <div class="dropdown-item scale-control" style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                     <circle cx="11" cy="11" r="8"></circle>
+                     <path d="m21 21-4.3-4.3"></path>
+                   </svg>
+                   <span>Zoom</span>
+                </div>
+                <div class="nav-zoom-controls">
+                   <button onclick="changeUIScale(-0.1); event.stopPropagation();" class="nav-zoom-btn">&minus;</button>
+                   <span id="ui-scale-label" class="nav-zoom-label">100%</span>
+                   <button onclick="changeUIScale(0.1); event.stopPropagation();" class="nav-zoom-btn">&plus;</button>
+                </div>
+             </div>
+             
+             <!-- AUTO OPEN DASHBOARD -->
+             <div class="dropdown-item" style="display:flex; align-items:center; gap:8px;" onclick="event.stopPropagation();">
+               <input type="checkbox" id="auto-open-dash-chk" onchange="toggleAutoOpenDash(this.checked)" style="cursor:pointer;" />
+               <label for="auto-open-dash-chk" style="cursor:pointer; margin:0; flex:1; font-size:13.5px; font-weight:600;">Auto-open Dashboard</label>
+             </div>
+           </div>
+
+           <!-- ACCOUNT GROUP -->
+           <div style="display:flex; flex-direction:column; gap:4px;">
+             <span class="dropdown-item" id="btn-profile" onclick="openDashboardPortal()" style="display:none; text-align:left; cursor: pointer; color:var(--nav-dropdown-color); font-weight:600;">
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+               Dashboard
+             </span>
+             <span class="dropdown-item btn-auth" onclick="handleAuthAction()" style="text-align:left; color:var(--gold-light); font-weight:600; cursor: pointer;">
+               <span class="auth-label">Login / Sign Up</span>
+             </span>
+           </div>
+        </div>
+      </div>
+    </div>
+    <button class="hamburger" id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- MOBILE NAV DRAWER -->
+  <div class="mobile-nav" id="mobile-nav">
+    <button class="mob-link" onclick="go('#hero');closeMobileNav()"> Home</button>
+    <button class="mob-link" onclick="go('#packages');closeMobileNav()"> Packages</button>
+    <button class="mob-link" onclick="go('#full-catalog');closeMobileNav()"> Catalog</button>
+    <button class="mob-link" onclick="go('#event-calendar');closeMobileNav()"> Event Calendar</button>
+    <button class="mob-link" id="mob-policies-btn" onclick="openPoliciesModal();closeMobileNav()"> Policies</button>
+    <button class="mob-link" id="mob-download-app-btn" onclick="downloadHaldenApp();closeMobileNav()"> Download App</button>
+    <div class="mob-divider"></div>
+    <button class="mob-link" id="mob-reservation-btn" onclick="openCustomPanel();closeMobileNav()" style="text-align:center; background:linear-gradient(135deg,var(--gold-dark),var(--gold)); color:#1a1007; font-weight:700; border-radius:10px; margin-top:4px; padding:14px 20px; letter-spacing:0.3px;"> Make a Reservation</button>
+    <button class="mob-link" id="mob-profile-link" onclick="openDashboardPortal();closeMobileNav()" style="display:none; text-align:center; background:#16a34a !important; color:#ffffff !important; font-weight:700 !important; border-radius:10px !important; margin-top:6px; padding:14px 20px; letter-spacing:0.3px; border:none !important;"> Dashboard</button>
+    <div class="mob-divider"></div>
+    <!-- MOBILE ZOOM CONTROLS -->
+    <div class="mob-zoom-box" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--cream2); border:1px solid var(--border); border-radius:10px; margin-top:6px;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:var(--brown);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <span>Zoom</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button onclick="changeUIScale(-0.1); event.stopPropagation();" style="width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background:var(--card-bg); color:var(--brown); font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">&minus;</button>
+        <span id="ui-scale-label-mob" style="font-size:13px; font-weight:700; color:var(--brown); min-width:42px; text-align:center;">100%</span>
+        <button onclick="changeUIScale(0.1); event.stopPropagation();" style="width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background:var(--card-bg); color:var(--brown); font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;">&plus;</button>
+      </div>
+    </div>
+
+    <!-- AUTO OPEN DASHBOARD CHECKBOX -->
+    <div class="mob-autodash-box" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--cream2); border:1px solid var(--border); border-radius:10px; margin-top:6px;" onclick="event.stopPropagation();">
+      <input type="checkbox" id="auto-open-dash-chk-mob" onchange="toggleAutoOpenDash(this.checked)" style="cursor:pointer; width:16px; height:16px; accent-color:var(--gold-dark);" />
+      <label for="auto-open-dash-chk-mob" style="cursor:pointer; margin:0; flex:1; font-size:13px; font-weight:600; color:var(--brown);">Auto-open Dashboard</label>
+    </div>
+
+    <button class="theme-toggle-btn" id="mob-theme-toggle" onclick="toggleTheme();"
+      style="width:100%;justify-content:center;border-radius:10px;margin-top:6px;">
+      <span class="theme-icon"></span><span class="theme-label">Dark Mode</span>
+    </button>
+    <button class="mob-link" id="mob-auth-btn" onclick="handleAuthAction();closeMobileNav()"
+      style="text-align:center;background:var(--cream2);border-radius:10px;margin-top:6px;padding:14px 20px;"> Login / Sign Up</button>
+
+  </div>
+
+  <!-- LOGOUT CONFIRM MODAL -->
+  <div class="error-overlay" id="logout-overlay" onclick="closeLogoutModal()" style="z-index: 100000;">
+    <div class="error-modal" onclick="event.stopPropagation()">
+      <h3 class="error-title" style="color:var(--text); margin-top:0;">Log Out</h3>
+      <p class="error-msg">Are you sure you want to log out of your account?</p>
+      <div style="display:flex; gap:25px; margin-top:20px; width:100%;">
+        <button class="btn-error-close" style="flex:1; background:transparent; color:var(--text); border:1px solid var(--border);" onclick="closeLogoutModal()">Cancel</button>
+        <button class="btn-error-close" style="flex:1; background:#d9534f; color:#fff;" onclick="executeLogOut()">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section id="hero">
+
+    <!-- FULL-SCREEN PHOTO SLIDES -->
+    <div class="hero-slides" id="hero-slides">
+      <div class="hero-slide active"
+        style="--himg: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774321988/halden1_sdv4yf.png')"></div>
+      <div class="hero-slide"
+        style="--himg: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323082/halden_4_fwsgdo.png')"></div>
+      <div class="hero-slide"
+        style="--himg: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323083/halden5_itbx3u.png')"></div>
+      <div class="hero-slide"
+        style="--himg: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323085/halden7_bqts0y.png')"></div>
+      <div class="hero-slide"
+        style="--himg: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323086/halden8_xh2jgu.png')"></div>
+    </div>
+
+    <!-- GRADIENT OVERLAYS for text readability -->
+    <div class="hero-grad-bottom"></div>
+    <div class="hero-grad-top"></div>
+
+    <!-- CENTER WRAPPER (square card + contact bar anchored together OUTSIDE) -->
+    <div class="hero-center-wrapper">
+      <div class="hero-content">
+        <svg class="corner top-left" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M10,10 Q40,20 60,60 Q20,40 10,10"/><circle cx="30" cy="30" r="4"/><circle cx="55" cy="20" r="2.5"/><circle cx="20" cy="55" r="2.5"/></svg>
+        <svg class="corner top-right" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M90,10 Q60,20 40,60 Q80,40 90,10"/><circle cx="70" cy="30" r="4"/><circle cx="45" cy="20" r="2.5"/><circle cx="80" cy="55" r="2.5"/></svg>
+        <svg class="corner bottom-left" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M10,90 Q40,80 60,40 Q20,60 10,90"/><circle cx="30" cy="70" r="4"/><circle cx="55" cy="80" r="2.5"/><circle cx="20" cy="45" r="2.5"/></svg>
+        <svg class="corner bottom-right" viewBox="0 0 100 100" fill="var(--gold-light)"><path d="M90,90 Q60,80 40,40 Q80,60 90,90"/><circle cx="70" cy="70" r="4"/><circle cx="45" cy="80" r="2.5"/><circle cx="80" cy="45" r="2.5"/></svg>
+
+        <div class="hero-logo-circle" style="width:220px; height:220px; border-radius:50%; background:#0a0a0a; border:4px solid var(--gold-light, #c49a3c); position:absolute; top:-110px; left:50%; transform:translateX(-50%); z-index:15; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.6);">
+          <img src="https://res.cloudinary.com/dg8ytmck5/image/upload/v1787591288/halden_logo_bgzhdu.png" alt="Halden's Logo" style="width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <h1 class="hero-title" style="font-family: 'Cormorant Garamond', serif; font-style: normal; font-weight: 300; margin-top: 95px; line-height: 1.15;">Halden's<br><em>Catering Services</em></h1>
+        
+        <div class="modal-divider hero-divider">
+          <div class="line"></div><div class="diamond"></div><div class="line"></div>
+        </div>
+
+        <p class="hero-sub">From intimate family gatherings to grand celebrations, Halden's catering service aims to
+          provide warmth, elegance, and flavor to your table.</p>
+        <div class="hero-btns">
+          <a class="btn-primary" onclick="go('#packages')">
+            View Packages
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </a>
+          <a class="btn-outline" onclick="openCustomPanel()"> Make your own custom package? </a>
+        </div>
+      </div>
+
+      <!-- CONTACT INFO BAR (OUTSIDE THE SQUARE CARD, ANCHORED DIRECTLY UNDER IT) -->
+      <div class="hero-contact-bar">
+        <a href="https://www.facebook.com/haldenseventstylistandcateringservices" target="_blank" rel="noopener" class="hero-contact-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          <span>Facebook</span>
+        </a>
+        <span class="hero-contact-sep">&bull;</span>
+        <a href="tel:09159064643" class="hero-contact-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+          <span>0915 906 4643</span>
+        </a>
+        <span class="hero-contact-sep">&bull;</span>
+        <span class="hero-contact-item">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>18 Basilio St, Manila, Metro Manila</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- PREV / NEXT ARROWS -->
+    <button class="hero-arrow hero-arrow-prev" id="hero-arrow-prev" onclick="heroNav(-1)"
+      aria-label="Previous">&#8249;</button>
+    <button class="hero-arrow hero-arrow-next" id="hero-arrow-next" onclick="heroNav(1)"
+      aria-label="Next">&#8250;</button>
+
+    <!-- BOTTOM HUD: counter -->
+    <div class="hero-hud">
+      <div class="hero-counter" id="hero-counter"><span class="hero-counter-cur">01</span> <span
+          class="hero-counter-sep">/</span> 05</div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="hero-progress">
+      <div class="hero-progress-fill" id="hero-progress-fill"></div>
+    </div>
+
+  </section>
+
+  <!-- DRAGGABLE CAROUSEL (desktop) / FADING SQUARE (mobile) -->
+  <section id="photo-carousel">
+    <div class="carousel-header">
+      <p class="section-label reveal">Gallery</p>
+      <h2 class="section-title reveal delay-1">Moments by Halden's</h2>
+      <p class="section-sub reveal delay-2">Experience the magic of our setups and catering excellence.</p>
+    </div>
+
+    <!-- Desktop: draggable horizontal carousel -->
+    <div class="carousel-container reveal delay-3" id="carousel-container">
+      <div class="carousel-track" id="carousel-track">
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774321988/halden1_sdv4yf.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Wedding
+              Reception</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323082/halden_4_fwsgdo.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Kiddie
+              Party</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323083/halden5_itbx3u.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Birthday
+              Celebration</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323085/halden7_bqts0y.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Corporate
+              Dinner</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323086/halden8_xh2jgu.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Grand
+              Reception</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323089/halden3_selh2o.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Family
+              Gathering</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323085/halden6_gz1sfv.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Debut
+              Celebration</p>
+          </div>
+        </div>
+        <div class="c-item">
+          <div class="c-img"
+            style="background: url('https://res.cloudinary.com/dg8ytmck5/image/upload/v1774323092/halden2_z1enpn.png') center/cover;">
+            <p style="color:white;text-shadow:0 3px 8px rgba(0,0,0,0.9);margin-top:auto;margin-bottom:16px;">Wedding
+              Banquet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile only: fading square carousel -->
+    <div class="mob-fade-carousel reveal delay-3" id="mob-fade-carousel"></div>
+  </section>
+
+  <!-- CUSTOMER REVIEWS -->
+  <section id="customer-reviews" style="padding-top: 60px;">
+    <div class="carousel-header">
+      <p class="section-label reveal">Testimonials</p>
+      <h2 class="section-title reveal delay-1">Client Reviews</h2>
+      <p class="section-sub reveal delay-2">See what our clients have to say about our service.</p>
+    </div>
+
+    <div class="carousel-container reveal delay-3" id="reviews-carousel-container" style="padding-top: 30px;">
+      <div class="carousel-track" id="reviews-track" style="animation-duration: 30s;">
+        <!-- Reviews go here -->
+        <div class="marquee-group">
+          <div class="review-card" onclick="openReviewModal('Maria Santos', '', 'The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating. Highly recommended for weddings.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating..."</p>
+            <div class="rc-author">- Maria Santos</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Juan Dela Cruz', '', 'Equipment arrived on time and the setup team was very professional. Made our corporate event completely stress-free.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Equipment arrived on time and the setup team was very professional. Made our corporate event..."</p>
+            <div class="rc-author">- Juan Dela Cruz</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Elena Reyes', '', 'Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food. Will definitely book again for our next family reunion.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food..."</p>
+            <div class="rc-author">- Elena Reyes</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Mark Bautista', '', 'Very easy to coordinate with. They handled the kids party with such care and the dessert buffet was a huge hit!')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Very easy to coordinate with. They handled the kids party with such care and the dessert buffet..."</p>
+            <div class="rc-author">- Mark Bautista</div>
+          </div>
+        </div>
+
+        <div class="marquee-group" aria-hidden="true">
+          <div class="review-card" onclick="openReviewModal('Maria Santos', '', 'The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating. Highly recommended for weddings.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating..."</p>
+            <div class="rc-author">- Maria Santos</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Juan Dela Cruz', '', 'Equipment arrived on time and the setup team was very professional. Made our corporate event completely stress-free.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Equipment arrived on time and the setup team was very professional. Made our corporate event..."</p>
+            <div class="rc-author">- Juan Dela Cruz</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Elena Reyes', '', 'Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food. Will definitely book again for our next family reunion.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food..."</p>
+            <div class="rc-author">- Elena Reyes</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Mark Bautista', '', 'Very easy to coordinate with. They handled the kids party with such care and the dessert buffet was a huge hit!')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Very easy to coordinate with. They handled the kids party with such care and the dessert buffet..."</p>
+            <div class="rc-author">- Mark Bautista</div>
+          </div>
+        </div>
+
+        <div class="marquee-group" aria-hidden="true">
+          <div class="review-card" onclick="openReviewModal('Maria Santos', '', 'The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating. Highly recommended for weddings.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"The catering was phenomenal! The food was served perfectly hot and the staff were very accommodating..."</p>
+            <div class="rc-author">- Maria Santos</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Juan Dela Cruz', '', 'Equipment arrived on time and the setup team was very professional. Made our corporate event completely stress-free.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Equipment arrived on time and the setup team was very professional. Made our corporate event..."</p>
+            <div class="rc-author">- Juan Dela Cruz</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Elena Reyes', '', 'Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food. Will definitely book again for our next family reunion.')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Beautiful table setups and the lechon was incredibly crispy. Every guest praised the food..."</p>
+            <div class="rc-author">- Elena Reyes</div>
+          </div>
+          <div class="review-card" onclick="openReviewModal('Mark Bautista', '', 'Very easy to coordinate with. They handled the kids party with such care and the dessert buffet was a huge hit!')">
+            <div class="rc-stars"></div>
+            <p class="rc-text">"Very easy to coordinate with. They handled the kids party with such care and the dessert buffet..."</p>
+            <div class="rc-author">- Mark Bautista</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Review Modal -->
+  <div class="auth-prompt-overlay hidden" id="reviewModal" onclick="closeReviewModal(event)" style="z-index: 10000;">
+    <div class="review-modal-content">
+      <h3 id="rm-name"
+        style="font-family: Arial, sans-serif; font-size:28px; color:var(--brown); margin-bottom:12px; font-style:italic;">
+      </h3>
+      <div id="rm-stars" style="font-size:20px; margin-bottom:24px;"></div>
+      <p id="rm-text" style="font-size:16px; color:var(--text-mid); line-height:1.7; font-family: Arial, sans-serif;">
+      </p>
+      <button class="btn-primary" style="margin-top:30px; border:none;"
+        onclick="document.getElementById('reviewModal').classList.add('hidden')">Close Review</button>
+    </div>
+  </div>
+
+  <!-- Reset Package Confirmation Modal -->
+  <div class="auth-prompt-overlay hidden" id="reset-confirm-modal" onclick="closeResetConfirmModal(event)" style="z-index: 999999 !important;">
+    <div class="review-modal-content" style="max-width:420px; text-align:center; padding:28px 24px; background:var(--warm-white); border:1px solid var(--border); border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h3 style="font-family: Arial, sans-serif; font-size:20px; font-weight:700; color:var(--brown); margin-bottom:8px;">
+        Reset &amp; Clear Package?
+      </h3>
+      <p style="font-size:13px; color:var(--text-mid); line-height:1.6; margin-bottom:24px;">
+        Are you sure you want to reset the package and clear everything? All selected items, package selections, and details will be removed.
+      </p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button class="btn-primary" style="background:#dc2626; color:#ffffff; border:none; padding:10px 20px; font-size:13px; font-weight:700; border-radius:10px; cursor:pointer;" onclick="confirmResetPackage()">
+          Yes, Reset Package
+        </button>
+        <button id="btn-keep-package" class="btn-outline btn-keep-package" style="border:none; padding:10px 20px; font-size:13px; font-weight:700; border-radius:10px; cursor:pointer;" onclick="closeResetConfirmModal()">
+          No, Keep Package
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openReviewModal(name, stars, text) {
+      if (window._reviewDragDidMove) return;
+      document.getElementById('rm-name').innerText = name;
+      document.getElementById('rm-stars').innerText = stars;
+      document.getElementById('rm-text').innerText = '"' + text + '"';
+      document.getElementById('reviewModal').classList.remove('hidden');
+    }
+    function closeReviewModal(e) {
+      if (e.target.id === 'reviewModal') {
+        e.target.classList.add('hidden');
+      }
+    }
+
+    // Client Reviews Carousel: Click and drag interactive scrolling
+    (function () {
+      const initCarouselDrag = function () {
+        const container = document.getElementById('reviews-carousel-container');
+        if (!container || container.dataset.dragInitialized) return;
+        container.dataset.dragInitialized = 'true';
+
+        let isDown = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        window._reviewDragDidMove = false;
+
+        container.addEventListener('mousedown', function (e) {
+          isDown = true;
+          container.classList.add('is-dragging');
+          startX = e.pageX - container.offsetLeft;
+          scrollLeft = container.scrollLeft;
+          window._reviewDragDidMove = false;
+        });
+
+        container.addEventListener('mouseleave', function () {
+          if (!isDown) return;
+          isDown = false;
+          container.classList.remove('is-dragging');
+          setTimeout(function () { window._reviewDragDidMove = false; }, 80);
+        });
+
+        container.addEventListener('mouseup', function () {
+          if (!isDown) return;
+          isDown = false;
+          container.classList.remove('is-dragging');
+          setTimeout(function () { window._reviewDragDidMove = false; }, 80);
+        });
+
+        container.addEventListener('mousemove', function (e) {
+          if (!isDown) return;
+          e.preventDefault();
+          const x = e.pageX - container.offsetLeft;
+          const walk = (x - startX) * 1.5;
+          if (Math.abs(walk) > 6) {
+            window._reviewDragDidMove = true;
+          }
+          container.scrollLeft = scrollLeft - walk;
+        });
+
+        // Touch gestures for touch screens & mobile
+        let touchStartX = 0;
+        let touchScrollLeft = 0;
+        container.addEventListener('touchstart', function (e) {
+          if (e.touches && e.touches[0]) {
+            touchStartX = e.touches[0].pageX - container.offsetLeft;
+            touchScrollLeft = container.scrollLeft;
+            window._reviewDragDidMove = false;
+          }
+        }, { passive: true });
+
+        container.addEventListener('touchmove', function (e) {
+          if (e.touches && e.touches[0]) {
+            const x = e.touches[0].pageX - container.offsetLeft;
+            const walk = (x - touchStartX) * 1.5;
+            if (Math.abs(walk) > 6) {
+              window._reviewDragDidMove = true;
+            }
+            container.scrollLeft = touchScrollLeft - walk;
+          }
+        }, { passive: true });
+
+        container.addEventListener('touchend', function () {
+          setTimeout(function () { window._reviewDragDidMove = false; }, 80);
+        }, { passive: true });
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCarouselDrag);
+      } else {
+        initCarouselDrag();
+      }
+    })();
+  </script>
+
+  <!-- PACKAGES -->
+  <section id="packages">
+    <div class="packages-header">
+      <p class="section-label reveal">Our Packages</p>
+      <h2 class="section-title reveal delay-1">Ready-Made Packages</h2>
+      <p class="section-sub reveal delay-2">Curated bundles for every type of event, complete, and
+        elegantly delivered.</p>
+    </div>
+
+    <div class="pkg-filters-row">
+      <div class="cat-filters" id="fbtns-pkgs">
+        <button class="fb active" onclick="setPkgOccasion('all',this)">All Occasions</button>
+        <button class="fb" onclick="setPkgOccasion('Wedding',this)"> Wedding</button>
+        <button class="fb" onclick="setPkgOccasion('Birthday',this)"> Birthday</button>
+        <button class="fb" onclick="setPkgOccasion('Corporate',this)"> Corporate</button>
+        <button class="fb" onclick="setPkgOccasion('Private',this)"> Private</button>
+      </div>
+
+      <div class="search-bar-wrap">
+        <input type="text" class="search-input" placeholder="Search packages (e.g. Royal, Wonderland...)"
+          oninput="onPkgSearch(this.value)">
+        <span class="search-icon"></span>
+      </div>
+    </div>
+    <div class="packages-grid reveal delay-3" id="pkgs-grid"></div>
+  </section>
+
+  <!-- FULL CATALOG READ-ONLY SECTION -->
+  <section id="full-catalog">
+    <div class="catalog-intro">
+      <p class="section-label reveal">Menu & Services</p>
+      <h2 class="section-title reveal delay-1">The Full Catalog</h2>
+      <p class="section-sub reveal delay-2">Browse our wide range of services with verified customer feedback and
+        ratings.</p>
+    </div>
+    <div class="pkg-filters-row" style="margin-top:20px;">
+      <div class="cat-filters" id="fbtns-full" style="margin-bottom:0;">
+        <button class="fb active" onclick="setFullCat('all',this)">All</button>
+        <button class="fb" onclick="setFullCat('food',this)"> Food</button>
+        <button class="fb" onclick="setFullCat('dessert',this)"> Desserts</button>
+        <button class="fb" onclick="setFullCat('drink',this)"> Drinks</button>
+        <button class="fb" onclick="setFullCat('decoration',this)"> Decor</button>
+        <button class="fb" onclick="setFullCat('equipment',this)"> Equipment</button>
+        <button class="fb" onclick="setFullCat('entertainment',this)"> Add-ons</button>
+
+      </div>
+
+      <div class="search-bar-wrap">
+        <input type="text" class="search-input" placeholder="Search menu items..." oninput="onFullSearch(this.value)">
+        <span class="search-icon"></span>
+      </div>
+    </div>
+    <div class="full-cat-grid reveal delay-3" id="full-grid"></div>
+    <div class="cat-pagination-wrap" id="full-cat-pagination"></div>
+  </section>
+
+
+
+
+  <!-- ===== PUBLIC EVENT CALENDAR ===== -->
+  <section id="event-calendar">
+    <div class="ev-cal-intro">
+
+      <h2 class="section-title reveal delay-1">Event Calendar</h2>
+      <p class="section-sub reveal delay-2">Browse all dates that are still available for your reservation, do note that we can cover up to 3 reservations per day!!</p>
+    </div>
+
+    <div class="ev-cal-legend reveal delay-3">
+      <div class="ev-cal-legend-item">
+        <span class="ev-cal-dot" style="background:#f1c40f;"></span>
+        <span>reserved</span>
+      </div>
+
+    </div>
+
+    <div class="ev-cal-wrapper reveal delay-3">
+      <div id="public-calendar-container">
+        <div id="public-calendar"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- DESKTOP: AI Floating Button (above cart) -->
+  <button class="desk-ai-fab" id="desk-ai-fab" onclick="toggleDeskAI()">
+    AI Planner
+    <div class="ai-notif" id="ai-notif-desk"></div>
+  </button>
+
+  <!-- DESKTOP: AI Window Overlay -->
+  <div class="desk-ai-overlay" id="desk-ai-overlay" onclick="closeDeskAI()"></div>
+
+  <!-- DESKTOP: Floating AI Chat Window -->
+  <div class="desk-ai-window" id="desk-ai-window">
+    <div class="daw-hdr">
+      <div class="daw-hdr-left">
+        <div class="ai-ava"></div>
+        <div>
+          <div class="ai-name">Halden's AI Planner</div>
+          <div class="ai-status">
+            <div class="ai-dot"></div>Ready to assist
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="btn-see-convs locked" id="btn-see-convs-desk" onclick="toggleAIConvsView('desk')" title="Log in and start a conversation to view chat history">See Conversations</button>
+        <button class="daw-close" onclick="closeDeskAI()" aria-label="Close AI Planner">&times;</button>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS HISTORY LIST PANEL (Hidden by default) -->
+    <div class="ai-convs-panel" id="ai-convs-panel-desk" style="display:none;">
+      <div class="ai-convs-hdr">
+        <div class="ai-convs-title" id="ai-convs-title-desk">Conversations (0/5)</div>
+        <button class="btn-back-chat" onclick="toggleAIConvsView('desk')">Back to Chat &rarr;</button>
+      </div>
+      <div class="ai-convs-items" id="ai-convs-items-desk"></div>
+      <div class="ai-convs-ftr">
+        <button class="btn-new-conv" id="btn-new-conv-desk" onclick="startNewAIConversation('desk')">+ New Conversation</button>
+      </div>
+    </div>
+
+    <!-- MAIN CHAT BODY PANEL -->
+    <div class="ai-chat-body" id="ai-chat-body-desk" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="daw-context-bar" id="daw-context-bar"></div>
+      <div class="ai-msgs" id="ai-msgs-desk" style="flex:1;overflow-y:auto;"></div>
+      <div class="ai-chips" id="ai-chips-desk">
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Show best sellers</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Filter Filipino foods</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Birthday for 50 guests</span>
+        <span class="ai-chip" onclick="chipSend(this,'desk')">Wedding reception</span>
+      </div>
+      <div class="ai-inp-row">
+        <textarea class="ai-inp" id="ai-inp-desk" placeholder="Describe your event or ask about your package..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('desk');}"
+          oninput="ar(this)"></textarea>
+        <button class="ai-send" id="ai-send-desk" onclick="sendMsg('desk')" aria-label="Send message">&#10148;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE: Floating AI Button -->
+  <button class="mob-ai-fab" id="mob-ai-fab" onclick="openMobAI()">
+    AI Planner
+    <div class="ai-notif" id="ai-notif"></div>
+  </button>
+
+  <!-- MOBILE: AI Drawer Overlay -->
+  <div class="mob-overlay" id="mob-overlay" onclick="closeMobAI()"></div>
+
+  <!-- MOBILE: AI Drawer -->
+  <div class="mob-ai-drawer" id="mob-ai-drawer">
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-hdr">
+      <div class="mob-drawer-title">
+        <div class="ai-ava"></div>
+        <div>
+          <div class="ai-name">Halden's AI Planner</div>
+          <div class="ai-status">
+            <div class="ai-dot"></div>Ready to assist
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="btn-see-convs locked" id="btn-see-convs-mob" onclick="toggleAIConvsView('mob')" title="Log in and start a conversation to view chat history">See Conversations</button>
+        <button class="mob-drawer-close" onclick="closeMobAI()" aria-label="Close AI Planner">&times;</button>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONS HISTORY LIST PANEL (Hidden by default) -->
+    <div class="ai-convs-panel" id="ai-convs-panel-mob" style="display:none;">
+      <div class="ai-convs-hdr">
+        <div class="ai-convs-title" id="ai-convs-title-mob">Conversations (0/5)</div>
+        <button class="btn-back-chat" onclick="toggleAIConvsView('mob')">Back to Chat &rarr;</button>
+      </div>
+      <div class="ai-convs-items" id="ai-convs-items-mob"></div>
+      <div class="ai-convs-ftr">
+        <button class="btn-new-conv" id="btn-new-conv-mob" onclick="startNewAIConversation('mob')">+ New Conversation</button>
+      </div>
+    </div>
+
+    <!-- MAIN CHAT BODY PANEL -->
+    <div class="ai-chat-body" id="ai-chat-body-mob" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="ai-msgs" id="ai-msgs-mob" style="flex:1;overflow-y:auto;"></div>
+      <div class="ai-chips" id="ai-chips-mob">
+        <span class="ai-chip" onclick="chipSend(this,'mob')">Show best sellers</span>
+        <span class="ai-chip" onclick="chipSend(this,'mob')">Filter Filipino foods</span>
+        <span class="ai-chip" onclick="chipSend(this,'mob')">Birthday for 50 guests</span>
+        <span class="ai-chip" onclick="chipSend(this,'mob')">Wedding reception</span>
+      </div>
+      <div class="ai-inp-row">
+        <textarea class="ai-inp" id="ai-inp-mob" placeholder="Describe your event..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('mob');}"
+          oninput="ar(this)"></textarea>
+        <button class="ai-send" id="ai-send-mob" onclick="sendMsg('mob')" aria-label="Send message">&#10148;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP OVERLAY -->
+  <div id="map-overlay" class="modal-overlay" onclick="closeMapModal()"></div>
+
+  <!-- MAP MODAL -->
+  <div id="map-modal" class="map-modal">
+    <div class="map-hdr">
+      <div class="map-title-row">
+        <div class="map-ttl"> Choose Location</div>
+        <p class="map-instruction">Please input the address and press Enter ( catering service only accepts locatiosn
+          within NCR) </p>
+      </div>
+      <button class="map-x" onclick="closeMapModal()"></button>
+    </div>
+    <div class="map-body">
+      <div class="map-search-row">
+        <input type="text" id="map-search-input" placeholder="Search for an address e.g. Quezon City..."
+          onkeydown="if(event.key==='Enter'){event.preventDefault();searchLocation();}" />
+        <button class="btn-map-search" onclick="searchLocation()">Search</button>
+      </div>
+      <div id="leaflet-map" style="width:100%;height:300px;border-radius:12px;background:var(--bg3);z-index:1;"></div>
+    </div>
+    <div class="map-ftr">
+      <button class="btn-remove-map" onclick="removeLocation()" style="padding:10px 24px; background:transparent; color:var(--red); border:1px solid var(--red); border-radius:8px; font-weight:700; cursor:pointer; font-size:13px; margin-right:auto;">Remove Location</button>
+      <button class="btn-confirm-map" onclick="confirmLocation()">Confirm Location</button>
+    </div>
+  </div>
+
+  <!-- CHECKOUT MAP OVERLAY -->
+  <div id="chk-map-overlay" class="modal-overlay" onclick="closeCheckoutMap()"></div>
+  <div id="chk-map-modal" class="map-modal">
+    <div class="map-hdr">
+      <div class="map-title-row">
+        <div class="map-ttl"> Event Venue</div>
+        <p class="map-instruction">This is the selected location for your event.</p>
+      </div>
+      <button class="map-x" onclick="closeCheckoutMap()"></button>
+    </div>
+    <div class="map-body">
+      <div id="chk-leaflet-map"
+        style="width:100%;height:300px;border-radius:12px;background:var(--bg3);z-index:1; pointer-events: none;"></div>
+    </div>
+  </div>
+
+  <!-- AUTO ALLOCATIONS FAB REMOVED -->
+
+  <!-- AUTO ALLOCATIONS MODAL -->
+  <div id="auto-alloc-overlay" class="modal-overlay" onclick="closeAutoAllocModal()" style="z-index:10050;"></div>
+  <div id="auto-alloc-modal" class="map-modal" style="max-width:500px; max-height:80vh; overflow-y:auto; background:var(--bg2); z-index:10051;">
+    <div class="map-hdr" style="border-bottom: 1px solid var(--border);">
+      <div class="map-title-row">
+        <div class="map-ttl" style="color:var(--red);">System Auto-Allocations</div>
+        <p class="map-instruction">These allocations are made from the event setup type that you chose, these equipments will be auto added to your package per the setup you selected. If you want complete freedom over your package, please select the custom setup. Thank you.</p>
+      </div>
+      <button class="map-x" onclick="closeAutoAllocModal()"></button>
+    </div>
+    <div class="map-body" style="padding:16px;">
+      <div id="auto-alloc-list" style="display:flex; flex-direction:column; gap:8px;">
+        <!-- Auto added items injected here by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM SETUP INITIAL SELECTION WARNING MODAL -->
+  <div id="custom-setup-warning-overlay" class="modal-overlay" onclick="closeCustomSetupWarningModal()" style="z-index:9998; display:none;"></div>
+  <div id="custom-setup-warning-modal" class="map-modal" style="max-width:550px; background:#231a12; border:1px solid #cba153; z-index:9999; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7);">
+    <div class="map-hdr" style="border-bottom: 1px solid rgba(203,161,83,0.3); background:#231a12;">
+      <div class="map-title-row">
+        <div class="map-ttl" style="color:#cba153; font-family:'Times New Roman', serif; font-size:22px; font-weight:700;">Custom Setup Notice</div>
+      </div>
+      <button class="map-x" onclick="closeCustomSetupWarningModal()"></button>
+    </div>
+    <div class="map-body" style="padding:22px; font-size:14px; line-height:1.65; color:#ffffff; font-weight:400; background:#231a12;">
+      Custom setups allow you to freely select the equipment you need instead of using one of our predefined event setups, so the system won't automatically select equipments for you. However because the equipment requirements are manually configured, your reservation will require additional review and confirmation by Alden before it can be confirmed, do take note of that as we wan't to make sure that you are sure with your selection of items as we are offering a full setup service for you so you don't have to worry about anything else.
+    </div>
+    <div style="padding:15px 20px; border-top:1px solid rgba(203,161,83,0.3); text-align:right; background:#231a12;">
+      <button class="btn-primary" onclick="closeCustomSetupWarningModal()" style="padding:12px 28px; font-weight:700; border-radius:50px; background:#cba153; color:#1a1612; border:none; cursor:pointer;">I understand</button>
+    </div>
+  </div>
+
+  <!-- CUSTOM SETUP FINALIZE CONFIRMATION MODAL -->
+  <div id="custom-setup-confirm-overlay" class="modal-overlay" onclick="closeCustomSetupConfirmModal()" style="z-index:9998; display:none;"></div>
+  <div id="custom-setup-confirm-modal" class="map-modal" style="max-width:480px; background:#231a12; border:1px solid #cba153; z-index:9999; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7);">
+    <div class="map-hdr" style="border-bottom: 1px solid rgba(203,161,83,0.3); background:#231a12;">
+      <div class="map-title-row">
+        <div class="map-ttl" style="color:#cba153; font-family:'Times New Roman', serif; font-size:22px; font-weight:700;">Confirm Custom Setup</div>
+      </div>
+      <button class="map-x" onclick="closeCustomSetupConfirmModal()"></button>
+    </div>
+    <div class="map-body" style="padding:22px; font-size:15px; line-height:1.6; color:#ffffff; text-align:center; font-weight:500; background:#231a12;">
+      Are you sure of your custom setup? Please make absolutely sure.
+    </div>
+    <div style="padding:15px 20px; border-top:1px solid rgba(203,161,83,0.3); display:flex; gap:12px; justify-content:flex-end; background:#231a12;">
+      <button onclick="closeCustomSetupConfirmModal()" style="padding:10px 22px; background:transparent; color:#cba153; border:1px solid #cba153; border-radius:50px; font-weight:700; cursor:pointer;">No</button>
+      <button onclick="confirmCustomSetupProceed()" style="padding:10px 26px; background:#cba153; color:#1a1612; border:none; border-radius:50px; font-weight:700; cursor:pointer;">Yes, Proceed</button>
+    </div>
+  </div>
+
+  <!-- PRE-CHECKOUT NOTICE MODAL (SPLIT PAYMENTS & REVIEW INFORMATION) -->
+  <div id="pre-checkout-notice-overlay" class="modal-overlay" onclick="closePreCheckoutNoticeModal()" style="z-index:100050; display:none;"></div>
+  <div id="pre-checkout-notice-modal" class="map-modal" style="max-width:540px; width:92vw; background:#231a12; border:1px solid #cba153; z-index:100060; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7); border-radius:20px;">
+    <div class="map-hdr" style="border-bottom: 1px solid rgba(203,161,83,0.3); background:#231a12; border-radius:20px 20px 0 0;">
+      <div class="map-title-row">
+        <div class="map-ttl" style="color:#cba153; font-family:'Times New Roman', serif; font-size:22px; font-weight:700;">Reservation &amp; Payment Notice</div>
+      </div>
+      <button class="map-x" onclick="closePreCheckoutNoticeModal()" style="color:#cba153; font-size:24px; cursor:pointer; background:none; border:none; padding:4px 8px; line-height:1;">&times;</button>
+    </div>
+    <div class="map-body" style="padding:22px; font-size:14.5px; line-height:1.65; color:#ffffff; text-align:left; font-weight:500; background:#231a12;">
+      Submitting a reservation and checking out does not mean that you will have to pay the full payment immediately. Halden's runs on split payments: an initial deposit of &#8369;5,000 flat upon contract finalization, followed by a 50% downpayment, and a final payment of 50% plus any additional charges. Besides that, we will still thoroughly review your reservation if it's feasible to be done with all the details you specified, so no need to worry about payments just yet. We will be conducting consultation meetings beforehand for your approved reservations so that you know exactly that we can be trusted for your event.
+    </div>
+    <div style="padding:15px 20px; border-top:1px solid rgba(203,161,83,0.3); display:flex; gap:12px; justify-content:flex-end; background:#231a12; border-radius:0 0 20px 20px;">
+      <button onclick="confirmPreCheckoutNoticeAndProceed()" style="padding:10px 28px; background:#cba153; color:#1a1612; border:none; border-radius:50px; font-weight:700; cursor:pointer; font-size:14px; transition:0.2s;">I Understand &amp; Proceed</button>
+    </div>
+  </div>
+
+  <!-- CONFIRM REMOVE AUTO-ALLOCATED EQUIPMENT MODAL -->
+  <div id="confirm-remove-auto-equip-overlay" class="modal-overlay" onclick="closeConfirmRemoveAutoEquipModal()" style="z-index:10060; display:none;"></div>
+  <div id="confirm-remove-auto-equip-modal" class="map-modal" style="max-width:440px; background:#231a12; border:1px solid #cba153; z-index:10061; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7); text-align:center;">
+    <div class="map-body" style="padding:28px 24px 20px; font-size:15px; line-height:1.6; color:#ffffff; font-weight:500; background:#231a12;">
+      <input type="hidden" id="remove-auto-equip-target-id" value="" />
+      <div style="font-size:16px; font-weight:700; color:#cba153; margin-bottom:12px; font-family:'Times New Roman', serif;">Notice on Allocated Equipment</div>
+      Are you absolutely sure? Because that equipment was allocated to your reservation for a proper catering service.
+    </div>
+    <div style="padding:16px 20px 24px; display:flex; justify-content:center; gap:16px; background:#231a12;">
+      <button type="button" class="btn-primary" onclick="confirmRemoveAutoEquipYes()" style="padding:10px 28px; font-weight:700; border-radius:50px; background:#dc2626; color:#ffffff; border:none; cursor:pointer; min-width:90px;">Yes</button>
+      <button type="button" class="btn-primary" onclick="closeConfirmRemoveAutoEquipModal()" style="padding:10px 28px; font-weight:700; border-radius:50px; background:#cba153; color:#1a1612; border:none; cursor:pointer; min-width:90px;">No</button>
+    </div>
+  </div>
+
+  <!-- SELECTION CONFLICT SPEECH BUBBLE -->
+  <div id="selection-conflict-bubble" class="selection-conflict-bubble" style="display:none;" onclick="event.stopPropagation()">
+    <button type="button" class="bubble-close-btn" onclick="document.getElementById('selection-conflict-bubble').style.display='none'" aria-label="Dismiss">&times;</button>
+    <div class="bubble-content">
+      <div id="selection-conflict-bubble-text" class="bubble-text">
+        The event date (or the meeting time) you selected is also being selected by someone else right now, if you want to ensure to secure your date, please checkout as soon as possible. Thank you.
+      </div>
+    </div>
+  </div>
+
+  <!-- PREMADE PACKAGE LOCKED MODIFICATION NOTICE MODAL -->
+  <div id="premade-pkg-locked-overlay" class="modal-overlay" onclick="closePremadePkgLockedModal()" style="z-index:100050; display:none;"></div>
+  <div id="premade-pkg-locked-modal" class="map-modal" style="max-width:500px; width:92vw; background:#231a12; border:1px solid #cba153; z-index:100060; display:none; box-shadow:0 10px 40px rgba(0,0,0,0.7); border-radius:20px;">
+    <div class="map-hdr" style="border-bottom: 1px solid rgba(203,161,83,0.3); background:#231a12; border-radius:20px 20px 0 0;">
+      <div class="map-title-row">
+        <div class="map-ttl" style="color:#cba153; font-family:'Times New Roman', serif; font-size:20px; font-weight:700;">Pre-Made Package Notice</div>
+      </div>
+      <button class="map-x" onclick="closePremadePkgLockedModal()" style="color:#cba153; font-size:24px; cursor:pointer; background:none; border:none; padding:4px 8px; line-height:1;">&times;</button>
+    </div>
+    <div class="map-body" style="padding:22px; font-size:14.5px; line-height:1.65; color:#ffffff; text-align:left; font-weight:500; background:#231a12;">
+      Premade packages are completely locked from any modifications from the items included in this package as this is a compiled deal that we made for our customers. If you wish to want a reservation with more customization then promptly cancel this and go to the make a reservation area, otherwise continue please.
+    </div>
+    <div style="padding:15px 20px; border-top:1px solid rgba(203,161,83,0.3); display:flex; gap:12px; justify-content:flex-end; background:#231a12; border-radius:0 0 20px 20px;">
+      <button onclick="closePremadePkgLockedModal()" style="padding:10px 22px; background:transparent; color:#cba153; border:1px solid #cba153; border-radius:50px; font-weight:700; cursor:pointer; font-size:14px; transition:0.2s;">Cancel</button>
+      <button onclick="confirmPremadePkgLockedProceed()" style="padding:10px 28px; background:#cba153; color:#1a1612; border:none; border-radius:50px; font-weight:700; cursor:pointer; font-size:14px; transition:0.2s;">Continue</button>
+    </div>
+  </div>
+
+  <!-- ===== DOWNLOAD APP CONFIRMATION MODAL ===== -->
+  <div id="download-app-modal" class="auth-prompt-overlay hidden" onclick="if(event.target===this)closeDownloadAppModal()" style="z-index: 100070 !important; display:none; align-items:center; justify-content:center; padding:16px;">
+    <div class="download-app-panel" onclick="event.stopPropagation()" style="max-width:440px; width:92vw; background:var(--card-bg, #1a1208); border:1px solid rgba(196,154,60,0.5); border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.85); padding:32px 24px; text-align:center; position:relative; box-sizing:border-box;">
+      <div style="width:56px; height:56px; margin:0 auto 16px; border-radius:50%; background:rgba(196,154,60,0.15); border:1px solid var(--gold, #c49a3c); display:flex; align-items:center; justify-content:center;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold, #c49a3c)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+      </div>
+      <h3 style="font-family: Arial, sans-serif; font-size:20px; font-weight:700; color:var(--text, #f5ebd7); margin:0 0 10px;">
+        Download Hal'Serve App
+      </h3>
+      <p style="font-size:14px; color:var(--text-mid, #baa07a); line-height:1.6; margin:0 0 24px;">
+        Are you sure you want to download the app for Hal'Serve?
+      </p>
+      <div style="display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap;">
+        <button type="button" class="btn-primary" style="background:linear-gradient(135deg, var(--gold-dark, #986514), var(--gold, #c49a3c)); color:#1a1007; border:none; padding:12px 28px; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer; min-width:110px; box-shadow:0 4px 14px rgba(196,154,60,0.25);" onclick="confirmDownloadApp()">
+          Yes
+        </button>
+        <button type="button" class="btn-outline" style="background:transparent; color:var(--text, #f5ebd7); border:1px solid rgba(196,154,60,0.4); padding:12px 28px; font-size:14px; font-weight:700; border-radius:10px; cursor:pointer; min-width:110px;" onclick="closeDownloadAppModal()">
+          No
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BUSINESS POLICIES MODAL ===== -->
+  <div id="policies-modal" class="modal-overlay hidden" onclick="if(event.target===this)closePoliciesModal()" style="z-index:100060; display:none; align-items:center; justify-content:center; padding:16px;">
+    <div class="policies-panel" onclick="event.stopPropagation()">
+      <div class="policies-hdr">
+        <div class="policies-hdr-info">
+          <div class="policies-badge">Halden's Guidelines</div>
+          <div class="policies-title">Business Policies</div>
+        </div>
+        <button type="button" class="policies-close-btn" onclick="closePoliciesModal()" aria-label="Close Policies">&times;</button>
+      </div>
+      <div class="policies-body">
+        <div class="policy-card">
+          <div class="policy-num">1</div>
+          <div class="policy-desc">Making a reservation here will not mean that you have to pay immediately, it will still need to be approved and then we'll have to conduct a meeting for a proper contract agreement.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-num">2</div>
+          <div class="policy-desc">You may come to our office if you want an actual face to face consultation however do remind us first beforehand either on our socials or within this website.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-num">3</div>
+          <div class="policy-desc">You may cancel your reservation anytime before any contractual agreement or before our discussed time range through our meetings. If we have passed that date then any cancellations will result in major fees.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-num">4</div>
+          <div class="policy-desc">In order for a reservation to be officialized, we would ask you to pay an additional 5,000 for the reservation fee. This is to simply know that you are a legit customer and that you are ready to commit to us for your reservation and that we are free to trust you to give it our all in handling your event.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-num">5</div>
+          <div class="policy-desc">Some of your data like your name, phone number, and email will be viewable by the owner of our business simply for separate contact means however it won't be displayed anywhere else or to anyone else.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-num">6</div>
+          <div class="policy-desc">Any further inquiries you may ask the AI planner such as with further event or reservation related questions. Thank you for considering us!!</div>
+        </div>
+      </div>
+      <div class="policies-ftr">
+        <button type="button" class="btn-policies-confirm" onclick="closePoliciesModal()">I Understand</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CART FAB -->
+  <button class="cart-fab" onclick="toggleCart()">
+    <div class="c-badge" id="c-badge">0</div>Cart
+  </button>
+
+  <!-- CART OVERLAY -->
+  <div id="cart-overlay" onclick="toggleCart()"></div>
+
+  <!-- CART DRAWER -->
+  <div id="cart-drawer" style="position:fixed; right:0; top:0; bottom:0; width:550px; max-width:100vw; overflow-y:auto; background:#fcf9f2; padding:40px; border-radius:20px 0 0 20px; box-shadow:-5px 0 40px rgba(0,0,0,0.15); transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index:11001; display:flex; flex-direction:column;">
+    
+    <!-- Close Button -->
+    <div class="chk-new-close" style="position:absolute; top:20px; right:20px; width:36px; height:36px; background:#fdfbf7; color:#cba153; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; border:1px solid rgba(203,161,83,0.4); transition:0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 100;" onclick="toggleCart()">&times;</div>
+    
+    <div style="text-align:center; margin-bottom: 25px;">
+      <h2 class="chk-new-title" style="font-family: 'Times New Roman', serif; font-size:32px; color:#3d2b1a; margin:0 0 15px 0;">Cart</h2>
+      <!-- Top Flourish -->
+      <div style="display:flex; justify-content:center;">
+        <svg class="pm-divider-icon" width="200" height="15" viewBox="0 0 200 24" fill="none">
+           <path d="M0 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <path d="M120 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#cba153"/>
+           <circle cx="85" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+           <circle cx="115" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+    
+    <div class="cart-items" id="cart-items" style="flex:1; overflow-y:auto; padding-right:10px; display:flex; flex-direction:column; gap:25px;">
+      <div class="cart-empty" style="text-align:center; padding-top:40px; color:#a89070; font-family:'Times New Roman', serif; font-size:18px;">
+        <p>Your package is empty.<br>Add items from the catalog.</p>
+      </div>
+    </div>
+
+    <div class="cart-ftr" style="margin-top:30px; border-top:1px dashed rgba(203,161,83,0.4); padding-top:20px;">
+      <div class="cart-tot-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <span class="cart-tot-lbl" style="font-size:18px; color:#5c4f44; font-family:'Times New Roman', serif;">Selected Package</span>
+        <span class="cart-tot-amt chk-new-title" id="cart-tot" style="font-size:24px; font-weight:700; color:#cba153; font-family:'Times New Roman', serif;">–</span>
+      </div>
+      <button class="btn-finalize chk-new-btn" id="btn-cart-checkout" disabled onclick="checkoutSelected()" style="width:100%; padding:16px 40px; border-radius:50px; font-size:16px; font-weight:700; letter-spacing:1px; background:#cba153; color:white; border:none; box-shadow: 0 4px 15px rgba(203,161,83,0.3); transition:0.2s; cursor:not-allowed; opacity:0.45;">Select a Package to Checkout</button>
+    </div>
+  </div>
+
+  <!-- TERMS AND CONDITIONS MODAL -->
+  <div class="error-overlay" id="terms-overlay" onclick="closeTermsModal()" style="z-index: 100000;">
+    <div class="error-modal" onclick="event.stopPropagation()" style="max-width: 600px; width: 90%; height: 80vh; display: flex; flex-direction: column; text-align: left; padding: 30px;">
+      <h3 class="error-title" style="color:var(--text); margin-top:0; text-align: center;">Terms and Conditions</h3>
+      <div id="terms-content" onscroll="checkTermsScroll()" style="overflow-y: auto; flex: 1; margin: 20px 0; padding-right: 15px; font-size: 14px; line-height: 1.6; color: var(--text-dim); border: 1px solid var(--border); padding: 15px; border-radius: 10px; background: var(--bg);">
+        <h4>1. Introduction</h4>
+        <p>Welcome to Halden's Event Management & Catering. By accessing our platform, you agree to be bound by these Terms and Conditions. Please read them carefully before using our services.</p>
+        
+        <h4>2. Services Provided</h4>
+        <p>Halden's provides comprehensive event management and catering services, including but not limited to venue setup, food preparation, staff allocation, and scheduling. All services are subject to availability and prior booking confirmation.</p>
+        
+        <h4>3. Booking and Reservations</h4>
+        <p>All bookings must be made through our official platform. A reservation is only considered confirmed once a deposit has been successfully processed and a confirmation email has been dispatched. We reserve the right to decline or cancel any reservation at our discretion, particularly in cases of suspected fraud or unavailability of resources.</p>
+        
+        <h4>4. Payment Terms</h4>
+        <p>Clients are required to pay a non-refundable deposit to secure their booking. The remaining balance must be settled at least 7 days prior to the event date. We accept major credit cards and certified e-payment methods. Failure to complete payment may result in the cancellation of your event.</p>
+        
+        <h4>5. Cancellations and Refunds</h4>
+        <p>Cancellations made more than 30 days before the event will receive a 50% refund of the deposit. Cancellations made within 30 days of the event are strictly non-refundable. In the unlikely event that Halden's must cancel your booking, a full refund will be provided.</p>
+        
+        <h4>6. Client Responsibilities</h4>
+        <p>The client is responsible for ensuring that the venue is accessible to our team at the agreed-upon time. Any damages caused by the client or their guests to Halden's equipment will be billed directly to the client.</p>
+
+        <h4>7. Liability</h4>
+        <p>Halden's shall not be held liable for any indirect, incidental, or consequential damages arising from the use of our services. Our total liability is limited to the amount paid for the specific service in question.</p>
+
+        <h4>8. Changes to Terms</h4>
+        <p>We reserve the right to modify these Terms and Conditions at any time. Continued use of our services constitutes acceptance of the revised terms.</p>
+        <div style="height: 20px;"></div>
+      </div>
+      <div style="display:flex; gap:25px; width:100%;">
+        <button class="btn-error-close" style="flex:1; background:transparent; color:var(--text); border:1px solid var(--border);" onclick="closeTermsModal()">Cancel</button>
+        <button class="btn-error-close" id="btn-accept-terms" style="flex:1; background:var(--gold); color:#1a1109; opacity: 0.5; cursor: not-allowed; pointer-events: none;" onclick="acceptTerms()" disabled>Accept Terms</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH OVERLAY -->
+  <div id="auth-overlay" onclick="closeAuth()"></div>
+
+  <!-- AUTH DRAWER -->
+  <div id="auth-drawer">
+    <div class="auth-hdr">
+      <div class="auth-brand">
+        <div class="auth-brand-icon">H</div>
+        <div>
+          <div class="auth-brand-name">Halden's</div>
+          <div class="auth-brand-sub">Event Management &amp; Catering</div>
+        </div>
+      </div>
+      <button class="auth-x" onclick="closeAuth()" title="Close">&times;</button>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+    <div class="auth-body">
+      <div class="auth-logged-in" id="auth-logged-in">
+        <div class="auth-user-ava"></div>
+        <div class="auth-user-name" id="auth-display-name">Welcome back!</div>
+        <div class="auth-user-email" id="auth-display-email"></div>
+        <button class="btn-signout" onclick="signOut()">Sign Out</button>
+      </div>
+      <div class="auth-panel active" id="panel-login">
+        <div class="auth-welcome">
+          <h3>Welcome back </h3>
+          <p>Log in to manage your reservations and saved packages.</p>
+        </div>
+        <div class="auth-msg" id="login-msg"></div>
+        <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com" maxlength="50"
+            onkeydown="if(event.key==='Enter') doLogin()" /></div>
+        <div class="auth-field">
+          <label>Password</label>
+          <div class="pass-input-wrap">
+            <input type="password" id="login-password" placeholder="Your password"
+              onkeydown="if(event.key==='Enter') doLogin()" />
+            <span class="pass-toggle" onclick="togglePassVisibility('login-password')" style="cursor:pointer;"></span>
+          </div>
+        </div>
+        <div class="auth-switch" style="text-align:right;margin-top:-10px;margin-bottom:15px;font-size:12px;"><a
+            onclick="switchAuthTab('forgot')">Forgot Password?</a></div>
+        <button class="auth-submit" id="login-btn" onclick="doLogin()">Login to My Account</button>
+        <div class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up here</a></div>
+        <button class="btn-google" onclick="doGoogleLogin()"><img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G"> Continue with
+          Google</button>
+      </div>
+      <div class="auth-panel" id="panel-signup">
+        <div class="signup-stepper">
+          <div class="signup-step active" id="sstep-dot-1">1</div>
+          <div class="signup-line"></div>
+          <div class="signup-step" id="sstep-dot-2">2</div>
+          <div class="signup-line"></div>
+          <div class="signup-step" id="sstep-dot-3">3</div>
+        </div>
+
+        <div id="signup-stage-1" class="signup-stage active">
+          <div class="auth-welcome">
+            <h3>Create an account </h3>
+            <p>Sign up to save your custom packages and track your reservations.</p>
+          </div>
+          <div class="auth-msg" id="signup-msg-1"></div>
+          <div class="row2">
+            <div class="auth-field"><label>First Name</label><input type="text" id="signup-fname" placeholder="Juan" maxlength="20" oninput="validateSignupFieldLive(this)" data-rule="First name is required. Purely letters and spaces only, no space or dash at start, no numbers or special characters (max 20 chars)." title="First name is required." />
+            </div>
+            <div class="auth-field"><label>Last Name</label><input type="text" id="signup-lname"
+                placeholder="Dela Cruz" maxlength="20" oninput="validateSignupFieldLive(this)" data-rule="Last name is required. Purely letters and spaces only, no space or dash at start, no numbers or special characters (max 20 chars)." title="Last name is required." /></div>
+          </div>
+          <div class="auth-field"><label>Middle Name (Optional)</label><input type="text" id="signup-mname"
+              placeholder="Santos" maxlength="20" oninput="validateSignupFieldLive(this)" data-rule="Middle name must only contain letters and spaces, no space or dash at start, no numbers or special characters (max 20 chars)." title="Middle name is optional." /></div>
+          <div class="auth-field"><label>Phone Number</label>
+            <div id="signup-phone-wrap" style="display:flex; align-items:center; border: 1px solid var(--gold); border-radius:4px; padding:0 12px; background:rgba(0,0,0,0.2); height:45px;">
+              <span style="color:var(--text); margin-right:8px; font-size:15px; font-weight:600;">+63</span>
+              <input type="tel" id="signup-phone" style="border:none; background:transparent; color:var(--text); flex:1; outline:none; height:100%; font-size:15px;" placeholder="9561545551" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, ''); validateSignupFieldLive(this);" data-rule="Enter a valid 10-digit Philippine mobile number starting with 9." title="Enter a valid 10-digit Philippine mobile number starting with 9.">
+            </div>
+          </div>
+          <div class="auth-field"><label>Email</label><input type="email" id="signup-email"
+              placeholder="your@email.com" maxlength="50" oninput="validateSignupFieldLive(this)" data-rule="Enter a valid email address (max 50 characters)." title="Enter a valid email address (max 50 characters)." /></div>
+          <div class="auth-field">
+            <label>Password <span style="font-size:10px; color:var(--gold); font-weight:400;">(min 8 chars, 1 number &amp; 1 special character)</span></label>
+            <div class="pass-input-wrap">
+              <input type="password" id="signup-password" placeholder="Min 8 chars" oninput="validateSignupFieldLive(this)" data-rule="Password must be at least 8 characters with at least 1 number and 1 special character." title="Password must be at least 8 characters with at least 1 number and 1 special character." />
+              <span class="pass-toggle" onclick="togglePassVisibility('signup-password')"
+                style="cursor:pointer;"></span>
+            </div>
+          </div>
+          <div class="auth-field">
+            <label>Confirm Password</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="signup-confirm-password" placeholder="Repeat password" oninput="validateSignupFieldLive(this)" data-rule="Passwords must match." title="Passwords must match." />
+              <span class="pass-toggle" onclick="togglePassVisibility('signup-confirm-password')"
+                style="cursor:pointer;"></span>
+            </div>
+          </div>
+          <button type="button" class="btn-terms" id="btn-terms" onclick="openTermsModal()">View Terms and Conditions</button>
+          <button class="auth-submit" id="btn-signup-next" onclick="validateSignupStep1()" disabled>Next: Verify Email &rarr;</button>
+        </div>
+
+        <div id="signup-stage-2" class="signup-stage">
+          <div class="auth-welcome">
+            <h3>Verify Your Email</h3>
+            <p id="otp-sent-desc">A 6-digit verification code has been sent to your email address.</p>
+          </div>
+          <div class="auth-msg" id="signup-msg-2"></div>
+
+          <!-- OTP Input -->
+          <div class="auth-field" style="margin-bottom:8px;">
+            <label>Enter 6-Digit Code</label>
+            <input type="text" id="otp-input" placeholder="_ _ _ _ _ _" maxlength="6"
+              style="text-align:center; font-size:28px; font-family:monospace; letter-spacing:10px; font-weight:700;"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)"
+              onkeydown="if(event.key==='Enter') verifyOtp()" />
+          </div>
+
+          <button class="auth-submit" onclick="verifyOtp()">Verify & Create Account</button>
+
+          <!-- Resend Email button -->
+          <div style="margin-top:12px;">
+            <button class="btn-back-auth" style="width:100%; justify-content:center;" onclick="resendOtpEmail()">Resend Email</button>
+          </div>
+
+          <button class="btn-back-auth" style="margin-top:8px; width:100%; justify-content:center;"
+            onclick="goToSignupStep(1)">Back to Details</button>
+        </div>
+
+        <div id="signup-stage-3" class="signup-stage">
+          <div class="success-wrap">
+            <div class="success-circle"></div>
+            <h3>Welcome Aboard!</h3>
+            <p>Congratulations, <strong id="verified-name-display"></strong>! Your account has been successfully created. You are now signed in and ready to start planning your event.</p>
+            <button class="auth-submit" style="margin-top:16px;" onclick="finishSignup()">Close</button>
+          </div>
+        </div>
+
+        <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Login here</a></div>
+      </div>
+
+      <!-- GOOGLE PROFILE SIGNUP PANEL -->
+      <div class="auth-panel" id="panel-google-signup">
+        <div class="auth-welcome">
+          <h3>Complete Your Profile</h3>
+          <p style="font-size:13px; color:var(--gold); margin-top:4px;">Selected Gmail: <strong id="google-email-display" style="color:var(--text);"></strong></p>
+        </div>
+        <div class="auth-msg" id="google-signup-msg"></div>
+
+        <div class="row2">
+          <div class="auth-field">
+            <label>First Name</label>
+            <input type="text" id="google-fname" placeholder="Juan" oninput="checkGoogleFormValidity()" />
+          </div>
+          <div class="auth-field">
+            <label>Last Name</label>
+            <input type="text" id="google-lname" placeholder="Dela Cruz" oninput="checkGoogleFormValidity()" />
+          </div>
+        </div>
+        
+        <div class="auth-field">
+          <label>Middle Name (Optional)</label>
+          <input type="text" id="google-mname" placeholder="Santos" oninput="checkGoogleFormValidity()" />
+        </div>
+
+        <div class="auth-field">
+          <label>Phone Number</label>
+          <div style="display:flex; align-items:center; border: 1px solid var(--gold); border-radius:4px; padding:0 12px; background:rgba(0,0,0,0.2); height:45px;">
+            <span style="color:var(--text); margin-right:8px; font-size:15px; font-weight:600;">+63</span>
+            <input type="tel" id="google-phone" style="border:none; background:transparent; color:var(--text); flex:1; outline:none; height:100%; font-size:15px;" placeholder="9561545551" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, ''); checkGoogleFormValidity();">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Password</label>
+          <div class="pass-input-wrap">
+            <input type="password" id="google-password" placeholder="Min 8 chars" oninput="checkGoogleFormValidity()" />
+            <span class="pass-toggle" onclick="togglePassVisibility('google-password')" style="cursor:pointer;"></span>
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label>Confirm Password</label>
+          <div class="pass-input-wrap">
+            <input type="password" id="google-confirm-password" placeholder="Repeat password" oninput="checkGoogleFormValidity()" />
+            <span class="pass-toggle" onclick="togglePassVisibility('google-confirm-password')" style="cursor:pointer;"></span>
+          </div>
+        </div>
+
+        <button type="button" class="btn-terms" id="btn-google-terms" onclick="openTermsModal()">View Terms and Conditions</button>
+
+        <button class="auth-submit" id="btn-google-signup-submit" onclick="submitGoogleSignup()" disabled style="opacity: 0.5; cursor: not-allowed; pointer-events: none;">Complete Signup</button>
+
+        <button class="btn-back-auth" id="btn-google-cancel" style="margin-top:10px; width:100%; justify-content:center;" onclick="cancelGoogleSignup()">Cancel</button>
+      </div>
+
+      <div class="auth-panel" id="panel-forgot">
+        <div class="auth-welcome">
+          <h3>Reset Password</h3>
+          <p id="forgot-subtitle">Enter your email address to receive a verification code.</p>
+        </div>
+        <div class="auth-msg" id="forgot-msg"></div>
+        
+        <!-- STEP 1: Email Input -->
+        <div id="forgot-step-1">
+          <div class="auth-field">
+            <label>Email</label>
+            <input type="email" id="forgot-email" placeholder="your@email.com" maxlength="50" onkeydown="if(event.key==='Enter') doForgotPassword()" />
+          </div>
+          <button class="auth-submit" id="forgot-btn" onclick="doForgotPassword()">Send Recovery Code</button>
+        </div>
+
+        <!-- STEP 2: OTP (Hidden initially) -->
+        <div id="forgot-step-2" style="display: none;">
+          <div class="auth-field">
+            <label>Verification Code</label>
+            <input type="text" id="forgot-otp" placeholder="6-digit code" maxlength="6" />
+          </div>
+          <button class="auth-submit" id="forgot-verify-otp-btn" onclick="verifyOtpOnly()">Next</button>
+          <div class="auth-switch" style="margin-top:10px;">
+            <a onclick="doForgotPassword()" style="cursor: pointer;">Resend Code</a>
+          </div>
+        </div>
+
+        <!-- STEP 3: New Passwords (Hidden initially) -->
+        <div id="forgot-step-3" style="display: none;">
+          <div class="auth-field">
+            <label>New Password</label>
+            <div class="pass-input-wrap" style="position:relative;">
+              <input type="password" id="forgot-new-password" placeholder="Min 6 characters" style="width: 100%; padding-right: 40px;" />
+              <button class="pass-toggle" type="button" onclick="togglePassVisibility('forgot-new-password')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;"></button>
+            </div>
+          </div>
+          <div class="auth-field">
+            <label>Confirm New Password</label>
+            <div class="pass-input-wrap" style="position:relative;">
+              <input type="password" id="forgot-confirm-password" placeholder="Re-enter new password" style="width: 100%; padding-right: 40px;" />
+              <button class="pass-toggle" type="button" onclick="togglePassVisibility('forgot-confirm-password')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;"></button>
+            </div>
+          </div>
+          <button class="auth-submit" id="forgot-verify-btn" onclick="verifyForgotPasswordOtp()">Reset Password</button>
+        </div>
+
+        <div class="auth-switch" style="margin-top:20px;">Remembered your password? <a
+            onclick="switchAuthTab('login')">Login here</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft-top">
+      <div>
+        <div class="ft-brand">Halden's Event Management &amp; Catering</div>
+        <p class="ft-desc">Premium catering services for all occasions. From intimate gatherings to grand celebrations,
+          we bring warmth and excellence to every table.</p>
+      </div>
+      <div class="ft-col">
+        <h4>Contact</h4><a target="_blank" href="https://www.facebook.com/people/Haldens-Event-Management-and-Catering-Services/100063485426130/">Facebook: Haldens Event Management and Catering Services</a><a href="tel:09159064643">Phone: 0915 906 4643</a><a>Address: 18 Basilio St, Manila, Metro Manila</a>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <span> 2025 Halden's Event Management &amp; Catering Service. All rights reserved.</span>
+      <span>Made with for every occasion</span>
+    </div>
+  </footer>
+
+  <!-- CHECKOUT MODAL (Redesigned) -->
+  <div class="dish-modal-overlay chk-new-modal" id="chk-modal-overlay" onclick="closeCheckout()">
+    <div id="chk-modal-box" onclick="event.stopPropagation()" style="position:fixed; right:0; top:0; bottom:0; width:550px; max-width:100vw; overflow-y:auto; background:#fcf9f2; padding:40px; border-radius:20px 0 0 20px; box-shadow:-5px 0 40px rgba(0,0,0,0.15); transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index:11001; display:flex; flex-direction:column;">
+      
+      <!-- Close Button -->
+      <div class="chk-new-close" style="position:sticky; top:0px; left:100%; width:36px; height:36px; background:#fdfbf7; color:#cba153; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; border:1px solid rgba(203,161,83,0.4); transition:0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 100; margin-top:-20px; margin-right:-20px; float:right;" onclick="closeCheckout()">&times;</div>
+      
+      <div style="text-align:center; margin-bottom: 25px;">
+        <h2 class="chk-new-title" style="font-family: 'Times New Roman', serif; font-size:32px; color:#3d2b1a; margin:0 0 15px 0;">Complete Reservation</h2>
+        <!-- Top Flourish -->
+        <div style="display:flex; justify-content:center;">
+          <svg class="pm-divider-icon" width="200" height="15" viewBox="0 0 200 24" fill="none">
+             <path d="M0 12h80" stroke="#cba153" stroke-width="0.5"/>
+             <path d="M120 12h80" stroke="#cba153" stroke-width="0.5"/>
+             <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#cba153"/>
+             <circle cx="85" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+             <circle cx="115" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="chk-body">
+        <div class="chk-summary" id="chk-summary" style="margin-bottom: 25px;"></div>
+        
+        <div class="chk-form" style="display:flex; flex-direction:column; gap:20px;">
+          <div class="chk-field">
+            <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Event Date</label>
+            <input type="text" id="chk-date" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+          </div>
+          <div style="display:flex; gap:25px; width:100%;">
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Call Time</label>
+              <input type="text" id="chk-calltime" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+            </div>
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Event Time Frame</label>
+              <input type="text" id="chk-timeframe" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+            </div>
+          </div>
+          <div class="chk-field">
+            <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Event Venue</label>
+            <input type="text" id="chk-venue" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:pointer;" onclick="openCheckoutMap()" placeholder="No specific venue selected" />
+          </div>
+          <div style="display:flex; gap:25px; width:100%;">
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Theme</label>
+              <input type="text" id="chk-theme" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+            </div>
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Occasion</label>
+              <input type="text" id="chk-type" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+            </div>
+          </div>
+          <div style="display:flex; gap:25px; width:100%;">
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Guest Count (Pax)</label>
+              <input type="text" id="chk-pax" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" />
+            </div>
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">VIP Guests</label>
+              <input type="text" id="chk-vip-info" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" placeholder="None" />
+            </div>
+          </div>
+          <div style="display:flex; gap:25px; width:100%;">
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">User Email</label>
+              <input type="text" id="chk-email" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" placeholder="Loading email..." />
+            </div>
+            <div class="chk-field" style="flex:1;">
+              <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">User Phone Number</label>
+              <input type="text" id="chk-phone" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" placeholder="Loading phone..." />
+            </div>
+          </div>
+          <div class="chk-field">
+            <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Event Description</label>
+            <textarea id="chk-desc" class="chk-new-input" readonly style="width:100%; min-height:75px; max-height:160px; padding:12px 14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:13px; line-height:1.6; cursor:default; resize:vertical; overflow-y:auto; word-break:break-word; overflow-wrap:anywhere; white-space:pre-wrap; font-family:inherit; box-sizing:border-box;"></textarea>
+          </div>
+          <div class="chk-field">
+            <label style="display:block; font-size:11px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Event Setup</label>
+            <input type="text" id="chk-event-setup" class="chk-new-input" readonly style="width:100%; padding:14px; background:#fffdf9; border:1px solid rgba(203,161,83,0.3); border-radius:8px; color:#5c4f44; font-size:14px; cursor:not-allowed;" placeholder="No setup selected" />
+          </div>
+          <div class="chk-field" style="background:#fbf7ef; border:1px solid rgba(203,161,83,0.3); border-radius:10px; padding:16px;">
+            <label style="display:block; font-size:12px; color:#cba153; text-transform:uppercase; letter-spacing:1px; font-weight:800; margin-bottom:6px;">Payment methods:</label>
+            <div style="font-size:13px; color:#5c4f44; line-height:1.5; font-weight:600;">
+              We only accept on hand cash payment and gcash for our transactions, please keep in mind before proceeding
+            </div>
+            <input type="hidden" id="chk-payment-method" value="Cash" />
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; margin: 30px 0 10px 0;">
+          <svg class="pm-divider-icon" width="200" height="15" viewBox="0 0 200 24" fill="none">
+             <path d="M0 12h80" stroke="#cba153" stroke-width="0.5"/>
+             <path d="M120 12h80" stroke="#cba153" stroke-width="0.5"/>
+             <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#cba153"/>
+             <circle cx="85" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+             <circle cx="115" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+          </svg>
+        </div>
+
+        <div id="chk-extra-info" class="chk-new-extra" style="margin-top:15px; border:1px solid rgba(203,161,83,0.3); border-radius:12px; padding:20px; background:#fbf7ef; display:none;">
+          <!-- Dynamic summary of VIP and Meeting Times for selected checkout package -->
+        </div>
+
+        <!-- Commitment & Notice Message Box -->
+        <div style="margin-top:20px; background:#fffdf9; border:1.5px solid rgba(203,161,83,0.4); border-radius:12px; padding:18px; color:#5c4f44; font-size:13px; line-height:1.6; text-align:left;">
+          <div style="font-size:11px; font-weight:800; color:#cba153; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">IMPORTANT RESERVATION NOTICE</div>
+          Do note that after booking this reservation, the next process will be for Alden to review your reservation to be approved which will take roughly within a day, during which please expect an additional 5,000 fee for the reservation. This is to ensure of your commitment with our services and in exchange, we will gladly give it our all for you and for trusting us with your event. Thank you and best regards.
+        </div>
+
+        <div id="chk-msg" class="auth-msg" style="margin-top:14px; font-size:14px; color:#d9534f;"></div>
+      </div>
+
+      <div class="chk-ftr" style="display:flex; justify-content:center; margin-top:30px;">
+        <button class="btn-finalize chk-new-btn" id="btn-confirm-res" style="width:100%; padding:16px 40px; border-radius:50px; font-size:16px; font-weight:700; letter-spacing:1px; background:#cba153; color:white; border:none; box-shadow: 0 4px 15px rgba(203,161,83,0.3); transition:0.2s; cursor:pointer;" onclick="openOrderConfirmation()">Confirm Reservation &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER ERROR MODAL -->
+  <div class="error-overlay" id="error-overlay" onclick="closeErrorModal()">
+    <div class="error-modal" onclick="event.stopPropagation()">
+      <div class="error-icon"></div>
+      <h3 class="error-title" id="error-title">A slight mishap</h3>
+      <p class="error-msg" id="error-msg">Please ensure you have selected at least one item for Food and Equipment
+        categories.</p>
+      <button class="btn-error-close" onclick="closeErrorModal()">Got it</button>
+    </div>
+  </div>
+
+  <!-- ORDER CONFIRMATION (ARE YOU SURE?) MODAL -->
+  <div class="modal-overlay" id="order-confirm-overlay" onclick="closeOrderConfirmation()">
+    <div
+      style="width:400px; background:#fffcf9; border:1.5px solid #4a3c31; border-radius:32px; box-shadow:0 30px 80px rgba(0,0,0,0.18); padding:32px; text-align:center; font-family:'DM Sans', sans-serif; position:relative; overflow:hidden;"
+      onclick="event.stopPropagation()">
+      <div style="position:absolute; top:0; left:0; width:100%; height:6px; background:#c49a3c;"></div>
+      <h2 style="font-size:24px; font-weight:800; color:#1a1007; margin-bottom:8px; letter-spacing:-0.5px; margin-top:20px;">Final Review
+      </h2>
+      <p style="font-size:13px; color:#8a7060; line-height:1.6; margin-bottom:24px; padding:0 10px;">
+        Everything looks perfect! Are you sure you want to proceed with this selection?
+      </p>
+
+      <!-- Order Summary Card -->
+      <div
+        style="background:#fff; border:1px solid rgba(74,60,49,0.1); border-radius:20px; padding:20px; text-align:left; margin-bottom:28px; box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+        <div
+          style="font-size:10px; font-weight:800; color:#c49a3c; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+          ORDER DETAILS</div>
+        <div
+          style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #f9f9f9; padding-bottom:8px;">
+          <span style="font-size:12px; color:#8a7060;">Package Name</span>
+          <span id="oc-package-name" style="font-size:12px; color:#1a1007; font-weight:700;">Garden Debut</span>
+        </div>
+        <div id="oc-premade-row"
+          style="display:none; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #f9f9f9; padding-bottom:8px;">
+          <span style="font-size:12px; color:#8a7060;">Premade Package</span>
+          <span id="oc-premade-name" style="font-size:12px; color:#1a1007; font-weight:700;"></span>
+        </div>
+        <div
+          style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #f9f9f9; padding-bottom:8px;">
+          <span style="font-size:12px; color:#8a7060;">Guest Count</span>
+          <span id="oc-guest-count" style="font-size:12px; color:#1a1007; font-weight:700;">35 Pax</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:4px;">
+          <span style="font-size:14px; color:#1a1007; font-weight:800;">Estimated Total</span>
+          <span id="oc-total-price" style="font-size:14px; color:#c49a3c; font-weight:900;">₱0</span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <button id="oc-confirm-btn"
+          style="width:100%; padding:18px; background:#4a3c31; color:#fff; border:none; border-radius:16px; font-weight:800; font-size:14px; cursor:pointer; box-shadow:0 10px 25px rgba(74,60,49,0.2);">
+          Yes, Proceed to Checkout
+        </button>
+        <button
+          style="width:100%; padding:14px; background:transparent; border:none; color:#999; font-weight:700; font-size:12px; cursor:pointer; text-decoration:underline;"
+          onclick="closeOrderConfirmation()">
+          No, I want to edit more
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REAL-TIME PAYMENT MODAL -->
+  <div class="modal-overlay" id="payment-overlay" style="z-index:3000; display:none;"></div>
+  <div class="modal" id="payment-modal" style="z-index:3010; max-width:400px; background:#fff; color:#000; display:none;">
+    <div style="padding:32px; text-align:center;">
+      <img src="https://paymongo.com/wp-content/uploads/2021/04/PayMongo-Primary-Logo.png" alt="Paymongo"
+        style="height:24px; margin-bottom:24px; filter: contrast(10);" />
+      <div style="font-size:18px; font-weight:700; margin-bottom:8px;">Complete Your Payment</div>
+      <div id="pay-amt-display" style="font-size:28px; font-weight:800; color:#000; margin-bottom:12px;">₱0.00</div>
+      <div id="pay-due-date-display" style="font-size:12px; font-weight:700; color:#d97706; margin-bottom:20px; display:none;"></div>
+
+      <div id="pay-selection-area" style="text-align:left; margin-bottom:20px;">
+        <label
+          style="font-size:11px; font-weight:700; color:#666; text-transform:uppercase; margin-bottom:6px; display:block;">Select
+          Payment Method</label>
+        <div id="pay-opt-online"
+          style="border:1.5px solid #4f46e5; border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px; margin-bottom:10px; cursor:pointer; background:#f9fafb;"
+          onclick="selectPaymentOption('online')" class="pay-opt">
+
+          <div style="flex:1;">
+            <div style="font-weight:600;">Online Payment</div>
+            <div style="font-size:11px; color:#999;">PayMongo Gateway (Cards, GCash)</div>
+          </div>
+        </div>
+        <div id="pay-opt-cash"
+          style="border:1.5px solid #eee; border-radius:10px; padding:12px; display:flex; align-items:center; gap:12px; cursor:pointer; background:#f9fafb;"
+          onclick="selectPaymentOption('cash')" class="pay-opt">
+
+          <div style="flex:1;">
+            <div style="font-weight:600;">Cash / Physical Payment</div>
+            <div style="font-size:11px; color:#999;">Pay at the venue</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pay-waiting-area" style="display:none; text-align:center; margin-bottom:20px;">
+
+        <div style="font-weight:700; font-size:16px;">Waiting for Admin Confirmation</div>
+        <div style="font-size:13px; color:#666; margin-top:8px;">Please hand your cash payment to the administrator.
+          This window will close automatically once the payment is confirmed on their end.</div>
+      </div>
+
+      <button id="pay-btn-submit"
+        style="width:100%; padding:14px; background:#4f46e5; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer;"
+        onclick="submitPaymentModal()">Proceed to Pay Online</button>
+    </div>
+  </div>
+
+  <!-- DISH INGREDIENT MODAL -->
+  <div class="dish-modal-overlay" id="dish-modal-overlay" onclick="closeDishModal()">
+    <div class="dish-modal" onclick="event.stopPropagation()">
+      <div class="dm-header" id="dm-header">
+        <div class="dm-close" onclick="closeDishModal()">&times;</div>
+      </div>
+      <div class="dm-body">
+        <div id="dm-image-wrap" style="display:none; width:100%; min-height:280px; height:300px; max-height:360px; background:#ffffff; border:1px solid var(--border, #e8dcc8); border-radius:16px; margin-bottom:20px; overflow:hidden; padding:16px; box-sizing:border-box; align-items:center; justify-content:center;">
+          <img id="dm-image" src="" alt="Dish Image" style="max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block; margin:0 auto;">
+        </div>
+        <div id="dm-best-seller-tag" class="tag-best-seller" style="display:none; margin-bottom:8px;">Best Seller</div>
+        <span class="dm-label">Ingredients & Highlights</span>
+        <h2 class="dm-title" id="dm-title">Dish Name</h2>
+        <p id="dm-desc" style="color:var(--text-mid); font-size:14px; margin: 10px 0 20px 0;"></p>
+        <div class="ingredients-grid" id="dm-ingredients">
+          <!-- Pills will be injected here -->
+        </div>
+        <div id="dm-price-info"
+          style="margin-top:15px; margin-bottom:15px; color:var(--primary); font-weight:700; font-size:18px;"></div>
+        <div class="allergy-disclaimer" id="dm-allergy-disclaimer">
+          <div class="ad-icon"></div>
+          <div class="ad-text">
+            <strong>Allergy Disclaimer:</strong> Please check the ingredients thoroughly if you are allergic to any
+            items used within this dish.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREMADE PACKAGE MODAL -->
+  <!-- PREMADE PACKAGE MODAL -->
+  <div class="dish-modal-overlay pm-new-modal" id="pkg-modal-overlay" onclick="closePkgModal()">
+    <div class="dish-modal" onclick="event.stopPropagation()" style="max-width:700px; width:100%; aspect-ratio: 1 / 1; max-height: 90vh; overflow-y: auto; position:relative; background:#fcf9f2; padding:40px; border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.15);">
+      
+      <!-- Close Button -->
+      <div class="pm-new-close" style="position:sticky; top:0px; left:100%; width:36px; height:36px; background:#fdfbf7; color:#cba153; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; border:1px solid rgba(203,161,83,0.4); transition:0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); z-index: 100; margin-top:-20px; margin-right:-20px; float:right;" onclick="closePkgModal()">&times;</div>
+      
+      <!-- Top Flourish -->
+      <div style="display:flex; justify-content:center; margin-bottom: 25px;">
+        <svg width="200" height="24" viewBox="0 0 200 24" fill="none">
+           <path d="M0 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <path d="M120 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <!-- Flourish center -->
+           <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#cba153"/>
+           <circle cx="85" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+           <circle cx="115" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+        </svg>
+      </div>
+
+      <!-- Package Image (dynamically set) -->
+      <div id="pm-image-wrap" style="display:none; width:100%; min-height:300px; height:340px; max-height:420px; background:#ffffff; border:1px solid rgba(203,161,83,0.3); border-radius:16px; margin-bottom:25px; overflow:hidden; padding:16px; box-sizing:border-box; align-items:center; justify-content:center;">
+        <img id="pm-image" src="" alt="Package Image" style="max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block; margin:0 auto;">
+      </div>
+
+      <!-- Header: Title and Price -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:20px; gap:20px;">
+        <div style="flex:1;">
+          <div style="color:#cba153; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#cba153"><path d="M12 2l2.4 7.6H22l-6.2 4.5 2.4 7.6-6.2-4.5-6.2 4.5 2.4-7.6L2 9.6h7.6z"/></svg>
+            <span id="pm-badge">MAJORITY SET</span>
+          </div>
+          <h2 id="pm-title" style="font-family: 'Times New Roman', serif; font-size:38px; color:#3d2b1a; margin:0; line-height:1.1;">Package Name</h2>
+        </div>
+        
+        <div style="width:1px; background:rgba(203,161,83,0.4); align-self:stretch; margin: 10px 0;"></div>
+        
+        <div style="text-align:right; min-width:140px;">
+          <div id="pm-price" style="font-family: 'Times New Roman', serif; font-size:38px; color:#cba153; line-height:1;"></div>
+          <!-- Subtitle for price inserted via JS -->
+          <div id="pm-price-sub" style="font-size:13px; color:#6b5d52; margin-top:6px;"></div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <p id="pm-desc" style="color:#5c4f44; font-size:15px; line-height:1.6; margin-bottom:25px; max-width:85%;"></p>
+
+      <div style="display:flex; justify-content:center; padding-bottom:20px;">
+        <button class="btn-finalize pm-select-btn" id="pm-select-btn" style="width:auto; padding:15px 40px; border-radius:50px; font-size:15px; font-weight:700; letter-spacing:1px; background:white; color:#cba153; border:2px solid #cba153; box-shadow: 0 4px 15px rgba(203,161,83,0.2); transition:0.2s;">Select Package</button>
+      </div>
+      <!-- Theme & Occasion Box -->
+      <div class="pm-theme-box" style="border: 1px solid rgba(203,161,83,0.3); border-radius:12px; padding:20px; display:flex; align-items:center; justify-content:center; gap:25px; margin-bottom:30px; background:#fbf7ef;">
+        <div style="display:flex; align-items:center; gap:25px; flex:1; justify-content:center;">
+          <div style="width:40px; height:40px; border-radius:50%; border:1px solid rgba(203,161,83,0.4); display:flex; align-items:center; justify-content:center; color:#cba153;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.07 0 2.11-.2 3.09-.56l1.37-3.95-3.03-3.03a4 4 0 1 1 5.37-5.91l3.03 3.03 1.34-3.84c.54-1.54.83-3.18.83-4.74 0-5.52-4.48-10-10-10z"></path></svg>
+          </div>
+          <div>
+            <div style="color:#cba153; font-size:11px; font-weight:800; letter-spacing:1.5px; margin-bottom:2px;">THEME</div>
+            <div id="pm-theme" style="color:#3d2b1a; font-size:15px; font-weight:500;"></div>
+          </div>
+        </div>
+        
+        <svg width="20" height="40" viewBox="0 0 20 40" fill="none">
+          <path d="M10 10l3 10-3 10-3-10z" fill="none" stroke="#cba153" stroke-width="0.5"/>
+          <circle cx="10" cy="20" r="1.5" fill="#cba153"/>
+        </svg>
+
+        <div style="display:flex; align-items:center; gap:25px; flex:1; justify-content:center;">
+          <div style="width:40px; height:40px; border-radius:50%; border:1px solid rgba(203,161,83,0.4); display:flex; align-items:center; justify-content:center; color:#cba153;">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
+          <div>
+            <div style="color:#cba153; font-size:11px; font-weight:800; letter-spacing:1.5px; margin-bottom:2px;">OCCASION</div>
+            <div id="pm-occasion" style="color:#3d2b1a; font-size:15px; font-weight:500;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Divider -->
+      <div style="position:relative; text-align:center; margin-bottom:20px;">
+        <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(203,161,83,0.4); z-index:1;"></div>
+        <span class="pm-divider-text" style="position:relative; z-index:2; background:#fcf9f2; padding:0 15px; color:#cba153; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;">INCLUDED IN THIS PACKAGE</span>
+        <div style="margin-top:2px;">
+          <svg class="pm-divider-icon" width="40" height="10" viewBox="0 0 40 10" fill="none" style="position:relative; z-index:2; background:#fcf9f2; padding:0 5px;">
+            <path d="M20 1l2 4 4 1-4 1-2 4-2-4-4-1 4-1 2-4z" fill="#cba153"/>
+            <circle cx="12" cy="6" r="1" fill="#cba153"/>
+            <circle cx="28" cy="6" r="1" fill="#cba153"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- TIERED PAX SELECTOR (moved down here, shown only for pricingMode=tiered packages) -->
+      <div id="pm-tier-selector" class="pm-tier-box" style="display:none; margin-bottom:20px; border:1px solid rgba(203,161,83,0.3); border-radius:12px; padding:20px; background:#fbf7ef;">
+        <label style="font-size:11px;color:#cba153;text-transform:uppercase;letter-spacing:1px;font-weight:800;">Select Pax Tier for dynamic pricing</label>
+        <select id="pm-tier-select" onchange="onPmTierChange()" class="pm-tier-select" style="width:100%;margin-top:8px;padding:12px 14px;border:1px solid rgba(203,161,83,0.4);border-radius:8px;background:#fdfbf7;color:#3d2b1a;font-size:15px;font-weight:600; cursor:pointer;">
+        </select>
+        <!-- The price will now update the main pm-price and pm-price-sub -->
+      </div>
+
+      <!-- Items Grid (Custom JS rendering) -->
+      <div id="pm-items" style="margin-bottom:30px;"></div>
+
+
+
+      <!-- Bottom Flourish -->
+      <div style="display:flex; justify-content:center; margin-top: 30px;">
+        <svg width="200" height="24" viewBox="0 0 200 24" fill="none">
+           <path d="M0 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <path d="M120 12h80" stroke="#cba153" stroke-width="0.5"/>
+           <path d="M100 2l3 8 8 2-8 2-3 8-3-8-8-2 8-2 3-8z" fill="#cba153"/>
+           <circle cx="85" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+           <circle cx="115" cy="12" r="2" fill="#cba153" fill-opacity="0.5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAME YOUR PACKAGE MODAL -->
+  <div class="dish-modal-overlay" id="name-pkg-modal-overlay">
+    <div class="dish-modal" onclick="event.stopPropagation()" style="max-width:400px;">
+      <div class="dm-header"
+        style="background:var(--primary); height:80px; border-radius:15px 15px 0 0; display:flex; align-items:center; justify-content:center;">
+        <div style="font-size:32px;"></div>
+      </div>
+      <div class="dm-body" style="padding:30px; text-align:center;">
+        <h2 class="dm-title" style="margin-bottom:10px;">Name Your Package</h2>
+        <p style="color:var(--text-mid); font-size:14px; margin-bottom:20px;">Give your custom creation a memorable
+          name.</p>
+
+        <div class="cpkg-field" style="text-align:left;">
+
+          <label for="cpkg-name-input">Package Name</label>
+          <input type="text" id="cpkg-name-input" class="cpkg-input" placeholder="e.g. Dream Wedding"
+            oninput="this.value = this.value.replace(/ Package$/i, '')"
+            onkeydown="if(event.key==='Enter') confirmPkgName()" />
+          <div style="font-size:12px; color:var(--text-dim); margin-top:8px;">* "Package" will be automatically
+            appended.
+          </div>
+        </div>
+
+        <button class="btn-finalize" onclick="confirmPkgName()" style="margin-top:20px; width:100%;">Save and Add to
+          Cart</button>
+        <button
+          style="background:none; border:none; color:var(--text-dim); margin-top:15px; font-size:12px; cursor:pointer;"
+          onclick="closeNamePkgModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ADVICE MODAL -->
+  <div class="dish-modal-overlay" id="ai-advice-modal" onclick="closeAiAdviceModal()">
+    <div class="dish-modal" onclick="event.stopPropagation()" style="max-width:500px;">
+      <div class="dm-header" style="background:var(--primary); height:100px; border-radius:15px 15px 0 0;">
+        <div class="dm-close" onclick="closeAiAdviceModal()">&times;</div>
+      </div>
+      <div class="dm-body" style="padding:30px;">
+        <span class="dm-label" style="background:var(--gold); color:white; padding:4px 12px; border-radius:20px;">AI
+          EVENT PLANNER</span>
+        <h2 class="dm-title" style="margin-top:10px;">What would you like to ask?</h2>
+        <p style="color:var(--text-mid); font-size:14px; margin-bottom:20px;">I'll analyze your current package and
+          answer your specific concerns about theme, food quantity, or budget.</p>
+
+        <textarea id="ai-question-input" class="cpkg-textarea"
+          placeholder="e.g. Is this food selection enough for a wedding? Do I have enough chairs for 100 people? Does my theme match the menu?"
+          rows="4"
+          style="border: 2px solid var(--cream2); padding: 15px; width:100%; box-sizing:border-box;"></textarea>
+
+        <button class="btn-finalize" onclick="submitAiQuestion()" style="margin-top:20px;">Submit and Ask AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+
+  <!-- MEETING TIME MODAL -->
+  <div id="mt-time-overlay" class="modal-overlay" onclick="closeMeetingTimeModal()"></div>
+  <div id="mt-time-modal" class="map-modal" style="max-width:400px;">
+    <div class="map-hdr">
+      <div class="map-ttl"> Propose Meeting Time</div>
+      <button class="map-x" onclick="closeMeetingTimeModal()"></button>
+    </div>
+    <div class="map-body" style="padding:20px;">
+      <div class="cpkg-field">
+        <label>Select Date</label>
+        <input type="date" id="mt-date-input" data-validate-meeting="true" class="cpkg-input" oninput="validateMeetingTimeModal()" />
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:15px;">
+        <div class="cpkg-field">
+          <label>From (e.g. 8am)</label>
+          <input type="time" id="mt-start-input" class="cpkg-input" oninput="validateMeetingTimeModal()" value="08:00" />
+        </div>
+        <div class="cpkg-field">
+          <label>To (e.g. 9pm)</label>
+          <input type="time" id="mt-end-input" class="cpkg-input" oninput="validateMeetingTimeModal()" value="21:00" />
+        </div>
+      </div>
+      <p style="font-size:11px; color:var(--text-dim); margin-top:15px;">
+        Select a date and the time range you are available for a meeting.
+      </p>
+    </div>
+    <div class="map-ftr">
+      <button class="btn-confirm-map" onclick="addMeetingTimeSlot()">Confirm & Add Slot</button>
+    </div>
+  </div>
+
+  <!-- ##### CUSTOMER MEETING HUB OVERLAY (READ-ONLY) ##### -->
+  <div id="c-mt-mode-overlay" class="mt-mode-overlay" style="display:none;">
+    <div class="mt-mode-hdr">
+      <div style="display:flex; align-items:center; gap:25px;">
+        <div class="nav-brand-icon" style="background:none; border:none; padding:0; overflow:hidden; border-radius:50%; width:36px; height:36px; flex-shrink:0;">
+          <img src="https://res.cloudinary.com/dg8ytmck5/image/upload/v1787591288/halden_logo_bgzhdu.png" alt="Logo" style="width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <div>
+          <div style="font-size:16px; font-weight:700; color:#0a0502;">Meeting in Progress</div>
+          <div id="c-mt-mode-subtitle" style="font-size:12px; color:#666;">Live session with Halden Events</div>
+        </div>
+        <div class="mt-mode-badge"
+          style="background:#e63946; color:#fff; font-size:10px; padding:4px 10px; border-radius:20px; font-weight:700; animation:pulse 2s infinite;">
+          ● LIVE SESSION</div>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items: center;">
+        <div id="c-mt-room-id"
+          style="display:none; padding: 6px 12px; background: #c49a3c; color: #fff; border-radius: 6px; font-weight: bold; font-family: monospace; font-size: 13px;">
+        </div>
+        <button id="c-mt-video-btn" class="btn-primary"
+          style="display:none; background:#4f8ef7; color:#fff; border:none; padding:8px 20px; border-radius:8px; cursor:pointer;"
+          onclick="enterCustomerVideo()">Enter Video Room</button>
+        <button class="btn-outline" onclick="closeCustomerMeetingHub()"
+          style="color:#ffffff; border:none; padding:8px 20px; border-radius:8px; cursor:pointer; background:#4b5563; font-weight:700;">Close
+          Window</button>
+      </div>
+    </div>
+
+    <div class="mt-mode-main"
+      style="padding:40px; display:grid; grid-template-columns: 1fr 350px; gap:40px; height:calc(100vh - 80px); overflow:hidden; background:#fdfbf7;">
+      <!-- Left: View-Only Details -->
+      <div style="overflow-y:auto; padding-right:20px;">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:20px;">
+          <div style="display:flex; gap:20px; align-items:center;">
+            <h2 id="c-mt-panel-title" style="font-family: Arial, sans-serif; color:#c49a3c; margin:0; font-size:32px;">
+              Reservation Review</h2>
+            <div id="c-mt-nav" style="display:flex; gap:8px;">
+              <button class="btn-outline active" id="btn-c-mt-nav-res" onclick="toggleCustomerMtPanel('res')"
+                style="font-size:11px; padding:6px 15px; border-radius:4px; border:none; background:#c49a3c; color:#ffffff; font-weight:700; cursor:pointer;">Reservation</button>
+              <button class="btn-outline" id="btn-c-mt-nav-food" onclick="toggleCustomerMtPanel('food')"
+                style="font-size:11px; padding:6px 15px; border-radius:4px; border:none; background:#4b5563; color:#ffffff; font-weight:700; cursor:pointer; display:none;">Food</button>
+              <button class="btn-outline" id="btn-c-mt-nav-design" onclick="toggleCustomerMtPanel('design')"
+                style="font-size:11px; padding:6px 15px; border-radius:4px; border:none; background:#4b5563; color:#ffffff; font-weight:700; cursor:pointer; display:none;">Design</button>
+              <button class="btn-outline" id="btn-c-mt-nav-rundown" onclick="toggleCustomerMtPanel('rundown')"
+                style="font-size:11px; padding:6px 15px; border-radius:4px; border:none; background:#4b5563; color:#ffffff; font-weight:700; cursor:pointer; display:none;">Rundown</button>
+            </div>
+          </div>
+          <div style="font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1px;"><i
+              class="fas fa-lock" style="margin-right:5px;"></i> View Only Mode</div>
+        </div>
+
+        <div id="c-mt-content" class="panel-body" style="color:#333;">
+          <!-- Dynamic Content -->
+        </div>
+      </div>
+
+      <!-- Right: Meeting Agenda & Notes (View Only) -->
+      <div
+        style="display:flex; flex-direction:column; gap:25px; border-left:1px solid rgba(0,0,0,0.1); padding-left:40px;">
+        <div>
+          <label
+            style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:15px;">Meeting
+            Agenda</label>
+          <div id="c-mt-agenda" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Agenda items shown here -->
+          </div>
+        </div>
+
+        <div style="flex:1;">
+          <label
+            style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:15px;">Admin
+            Notes</label>
+          <div id="c-mt-notes"
+            style="background:#fff; border:1px solid rgba(0,0,0,0.1); border-radius:12px; padding:20px; font-size:14px; color:#444; line-height:1.6; min-height:150px; white-space:pre-wrap;">
+            The admin is currently updating meeting notes...</div>
+        </div>
+
+        <!-- Shared Documents (synced from admin uploads) -->
+        <div id="c-mt-shared-docs" style="display:none;">
+          <!-- Populated by updateCustomerMeetingUI -->
+        </div>
+
+        <div
+          style="padding:20px; background:rgba(196,154,60,0.05); border-radius:12px; border:1px solid rgba(196,154,60,0.1);">
+          <div style="font-size:13px; font-weight:700; color:#c49a3c; margin-bottom:5px;">Help & Support</div>
+          <div style="font-size:12px; color:#666; line-height:1.4;">If you have questions during the meeting, you can
+            use the built-in chat or ask your coordinator directly in the video room.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .mt-mode-overlay {
+      position: fixed;
+      inset: 0;
+      background: #fdfbf7;
+      /* Opaque solid background to fix "broken" see-through look */
+      z-index: 100000 !important;
+      display: flex;
+      flex-direction: column;
+      color: #0a0502;
+      overflow: hidden;
+    }
+
+    .mt-mode-hdr {
+      height: 80px;
+      padding: 0 40px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    .mt-mode-main {
+      background: #fdfbf7;
+    }
+  </style>
+
+  <!-- RESERVATION WAIT MODAL -->
+  <div id="res-wait-overlay" onclick="closeResWaitModal()"
+    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 5, 2, 0.85); backdrop-filter: blur(8px); display: none; z-index: 5000; justify-content: center; align-items: center;">
+    <div id="res-wait-modal" onclick="event.stopPropagation()"
+      style="max-width:720px; width:90%; background: var(--bg3); border: 2px solid var(--gold); border-radius: 24px; box-shadow: 0 24px 64px rgba(0,0,0,0.4); text-align:left; padding: 40px; transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); position:relative; overflow:hidden;">
+
+      <div id="bs-placed-badge"
+        style="position: absolute; top: 30px; right: -40px; background: var(--gold); color: #000; font-size: 11px; font-weight: 900; padding: 8px 50px; transform: rotate(45deg); letter-spacing: 2px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        JUST PLACED</div>
+
+      <div class="summary-section-title">Reservation Summary</div>
+
+      <div style="margin-bottom: 30px">
+        <div id="bs-package-name"
+          style="font-size: 28px; font-weight: 800; color: var(--text); font-family: Arial, serif;">Royal Garden Wedding
+          Package</div>
+        <div style="font-size: 14px; color: var(--text-dim); margin-top: 6px">Reservation ID: <span id="bs-res-id"
+            style="color: var(--gold); font-weight: 700">#RES-PENDING</span></div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="info-field">
+          <div class="info-label">Occasion</div>
+          <div class="info-value" id="bs-occasion">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Theme</div>
+          <div class="info-value" id="bs-theme">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Date</div>
+          <div class="info-value" id="bs-date">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Time Slot</div>
+          <div class="info-value" id="bs-time">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Pax</div>
+          <div class="info-value" id="bs-pax">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">VIP Count</div>
+          <div class="info-value" id="bs-vip">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Venue Location</div>
+          <div class="info-value" id="bs-venue-location">-</div>
+        </div>
+        <div class="info-field">
+          <div class="info-label">Meeting Hub</div>
+          <div class="info-value" id="bs-meeting" style="color: #e67e22">-</div>
+        </div>
+      </div>
+
+      <div class="info-label" style="margin-bottom: 8px">Venue Address</div>
+      <div class="venue-box">
+        <div style="font-size:20px;">📍</div>
+        <div class="info-value" id="bs-address" style="font-weight: 600; line-height: 1.5; font-size:14px;">-</div>
+      </div>
+
+      <div class="summary-section-title">Included Items & Menu</div>
+      <div id="bs-items-list" style="display: flex; flex-wrap: wrap; gap: 8px">
+        <!-- Tags will load here -->
+      </div>
+
+      <div
+        style="margin-top: 40px; border-top: 1px solid var(--border); opacity:0.1; padding-top: 30px; display: flex; justify-content: flex-end; gap: 16px;">
+        <button class="btn-outline" style="padding: 12px 24px; border-radius: 12px; font-weight: 700;"
+          onclick="closeResWaitModal()">Close</button>
+        <button class="btn-primary" style="padding: 12px 32px; border-radius: 12px; font-weight: 700;"
+          onclick="closeResWaitModal(); switchDashTab('reservations', document.querySelector('.dash-nav-item'))">Go to
+          Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ── Supabase SDK ──────────────────────────────────────────
+    const SUPABASE_URL  = 'https://llngowrkbzefjdkktgfm.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsbmdvd3JrYnplZmpka2t0Z2ZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzE3MTAsImV4cCI6MjEwNzUwNzcxMH0.8IndBI2vVOeTsUwwzNd9zaIcO-M4toGRrtR-mlkUeO0';
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON = SUPABASE_ANON;
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    // Secondary / Standby Supabase Client
+    window.SUPABASE_BACKUP_URL  = 'https://nukbdmyqizrnkmbusdtm.supabase.co';
+    window.SUPABASE_BACKUP_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51a2JkbXlxaXpybmttYnVzZHRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMjM3NTQsImV4cCI6MjA5ODg5OTc1NH0.WlKtqa8hBxLedDHS7-q10yoPne6VTjt5F4E86vTA5eY';
+    try {
+      window.supabaseBackupClient = window.supabase.createClient(window.SUPABASE_BACKUP_URL, window.SUPABASE_BACKUP_ANON);
+    } catch (e) {
+      console.warn('[index.html] Secondary Supabase client init warning:', e);
+    }
+  </script>
+  <!-- FIRESTORE EMULATION ADAPTER -->
+  <script src="supabase_adapter.js?v=160"></script>
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function() {
+      emailjs.init("rKo0nYgSSEaf_NUMH");
+    })();
+  </script>
+  <script src="notifications.js?v=8"></script>
+  <script src="app.js?v=114"></script>
+
+
+<!-- ===== UNIFIED CUSTOM WORKSPACE OVERLAY ===== -->
+<div id="custom-workspace-overlay">
+
+
+  <!-- LEFT: Custom Package Builder Panel -->
+  <div class="cpkg-panel cpkg-floating-panel" id="cpkg-panel">
+
+        <!-- HEADER -->
+        <div class="cpkg-panel-hdr">
+          <div class="cpkg-hdr-title">
+            <div class="cpkg-icon"></div>
+            <div>
+              <div class="cpkg-title" id="cpkg-title-text">My Custom Package</div>
+              <div class="cpkg-subtitle" style="font-size:14px; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; background:rgba(212,175,55,0.1); padding:6px 12px; border-radius:6px; display:inline-block; margin-top:5px;">Please fill in all the details for your event.</div>
+            </div>
+          </div>
+          <div class="cpkg-hdr-actions">
+
+            <button class="btn-cpkg-close" onclick="closeCustomPanel()" title="Close" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:22px;line-height:1;padding:0 4px;margin-left:4px;" aria-label="Close">&#10005;</button>
+          </div>
+        </div>
+
+        <!-- EVENT DETAILS FORM -->
+        <div class="cpkg-form" id="cpkg-form">
+
+          <!-- Budget Section -->
+          <div class="cpkg-section">
+            <div class="cpkg-section-lbl"> Budget</div>
+            <div class="cpkg-field">
+              <label for="cpkg-budget">Target Budget (&#8369;) We won't let you exceed this</label>
+              <input type="number" id="cpkg-budget" class="cpkg-input highlight-budget" placeholder="e.g. 50000"
+                oninput="renderCustomPkg()" />
+            </div>
+          </div>
+
+          <!-- Event Info Section -->
+          <div class="cpkg-section">
+            <div class="cpkg-section-lbl"> Event Details</div>
+            <div class="cpkg-field">
+              <label for="cpkg-desc">Event Description</label>
+              <textarea id="cpkg-desc" class="cpkg-textarea"
+                placeholder="Describe your event occasion, vibe, special requests..." rows="3" data-required="true" data-rule="Please provide a brief event description." oninput="ar(this); validateCpkgField('cpkg-desc')"></textarea>
+            </div>
+            <div class="cpkg-row-2">
+              <div class="cpkg-field" style="position:relative;">
+                <label for="cpkg-occasion">Occasion <span style="color:#dc2626;">*</span></label>
+                <select id="cpkg-occasion" class="cpkg-input"
+                  data-required="true" data-rule="Please select an event occasion."
+                  onchange="toggleOther('cpkg-occasion'); validateCpkgField('cpkg-occasion');">
+                  <option value="" disabled selected>Select an occasion</option>
+                  <option value="Wedding">Wedding</option>
+                  <option value="Birthday">Birthday</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Private">Private</option>
+                  <option value="Others">Others</option>
+                </select>
+                <input type="text" id="cpkg-occasion-other" class="cpkg-input" placeholder="Please specify occasion..."
+                  style="display:none; margin-top:8px;" />
+              </div>
+              <div class="cpkg-field" style="position:relative;">
+                <label for="cpkg-theme">Theme / Style <span style="color:#dc2626;">*</span></label>
+                <select id="cpkg-theme" class="cpkg-input" data-required="true" data-rule="Please select a theme/style."
+                  onchange="toggleOther('cpkg-theme'); validateCpkgField('cpkg-theme');">
+                  <option value="" disabled selected>Select a theme</option>
+                  <!-- Options populated from Supabase -->
+                  <option value="Others">Others</option>
+                </select>
+                <input type="text" id="cpkg-theme-other" class="cpkg-input" placeholder="Please specify theme..."
+                  style="display:none; margin-top:8px;" />
+              </div>
+            </div>
+        </div>
+
+          <!-- Event Setup Section -->
+          <div class="cpkg-section">
+            <div class="cpkg-section-lbl"> Event Setup</div>
+            <div class="cpkg-field" style="position:relative;">
+              <label for="cpkg-event-setup">Setup Type <span style="color:#dc2626;">*</span></label>
+              <select id="cpkg-event-setup" class="cpkg-input" data-required="true" data-rule="Please select an event setup type."
+                onchange="onEventSetupChange(true); renderCustomPkg(); validateCpkgField('cpkg-event-setup');">
+                <option value="" disabled>Loading setups...</option>
+              </select>
+            </div>
+            <div id="cpkg-event-setup-preview" style="display:none; margin-top:10px; padding:12px; background:rgba(196,154,60,0.06); border:1px solid rgba(196,154,60,0.3); border-radius:10px; font-size:12px; color:var(--text-mid,#888);"></div>
+          </div>
+
+          <!-- Venue & Guests Section -->
+          <div class="cpkg-section">
+            <div class="cpkg-section-lbl"> Venue &amp; Guests</div>
+            <div style="display:grid; grid-template-columns: 60px 100px minmax(0, 1fr); gap:8px; margin-bottom:12px;">
+              <div class="cpkg-field" style="margin-bottom:0; min-width:0; position:relative;">
+                <label for="cpkg-pax">Pax <span style="color:#dc2626;">*</span></label>
+                <input type="number" id="cpkg-pax" class="cpkg-input" placeholder="e.g. 80" min="1" max="999" style="padding:10px 6px;"
+                  data-required="true" data-rule="Guest count is required (min 10, max 200)."
+                  oninput="renderCat(); renderFullCatalog(); renderCustomPkg(); updateDawContextBar(); validateCpkgField('cpkg-pax');" />
+                <select id="cpkg-pax-select" class="cpkg-input" style="display:none; padding:10px 2px; font-size:11px;" onchange="handleMajorlySetPaxChange(this)"></select>
+              </div>
+              <div class="cpkg-field" style="margin-bottom:0; min-width:0; position:relative;">
+                <label for="cpkg-calltime">Call Time <span style="color:#dc2626;">*</span></label>
+                <input type="time" id="cpkg-calltime" class="cpkg-input" style="padding:10px 6px;"
+                  data-required="true" data-rule="Please enter the call time."
+                  onchange="validateCallTime(); renderCustomPkg(); validateCpkgField('cpkg-calltime');" />
+              </div>
+              <div class="cpkg-field" style="margin-bottom:0; min-width:0; position:relative;">
+                <label for="cpkg-date">Event Date <span style="color:#dc2626;">*</span></label>
+                <div style="position:relative; width:100%;">
+                  <input type="text" id="cpkg-date" class="cpkg-input" style="padding:10px 32px 10px 8px; min-width:0; cursor:pointer; width:100%; box-sizing:border-box;"
+                    placeholder="YYYY-MM-DD" readonly
+                    onclick="openCustomEventDateCalendarModal()"
+                    onfocus="openCustomEventDateCalendarModal()"
+                    data-required="true" data-rule="Event date must be at least 14 days from today (up to 50 years in advance)."
+                    onchange="renderCustomPkg(); validateCpkgField('cpkg-date');" />
+                  <span onclick="openCustomEventDateCalendarModal()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--gold, #c49a3c); font-size:14px; pointer-events:auto;" title="Open Calendar">
+                    <i class="fas fa-calendar-alt"></i>
+                  </span>
+                </div>
+                <div id="cpkg-date-conflict-msg" style="display:none; font-size:11px; margin-top:4px; font-weight:600; line-height:1.3;"></div>
+              </div>
+            </div>
+
+            <div style="margin-bottom:12px;">
+              <div class="cpkg-field" style="margin-bottom:0;">
+                <label>Event Time Frame <span style="color:#dc2626;">*</span></label>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <input type="time" id="cpkg-timeframe-start" class="cpkg-input" style="flex:1;"
+                    data-required="true" data-rule="Please enter the event start time."
+                    onchange="validateCallTime(); renderCustomPkg(); validateCpkgField('cpkg-timeframe-start'); validateCpkgField('cpkg-timeframe-end');" />
+                  <span style="color:var(--text-dim); font-size:12px; flex-shrink:0;">to</span>
+                  <input type="time" id="cpkg-timeframe-end" class="cpkg-input" style="flex:1;"
+                    data-required="true" data-rule="End time must be after start time (min 1 hour)."
+                    onchange="renderCustomPkg(); validateCpkgField('cpkg-timeframe-end');" />
+                </div>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns: auto 1fr; gap:12px; margin-bottom:12px; align-items: end;">
+              <div style="margin-bottom:0;">
+                <label style="font-size:11px; margin:0; display:flex; align-items:center; gap:6px; cursor:pointer; background:var(--cream2); padding:0 12px; border-radius:8px; border:1.5px solid var(--border); width:fit-content; height: 44px;">
+                  <input type="checkbox" id="cpkg-vip-check" onchange="toggleVIPFields()">
+                  Include VIPs?
+                </label>
+              </div>
+              <div class="cpkg-field" style="margin-bottom:0; position:relative;">
+                <label for="cpkg-venue-location">Venue Location <span style="color:#dc2626;">*</span></label>
+                <div style="position:relative;">
+                  <div id="cpkg-venue-overlay" style="display:none; position:absolute; inset:0; z-index:10; cursor:not-allowed;" onclick="openErrorModal('The venue location is automatically locked to whatever address you inputted in the maps, please remove the location in the maps to browse the possible venue locations.')"></div>
+                  <select id="cpkg-venue-location" class="cpkg-input" data-required="true" data-rule="Please select a venue city."
+                    onchange="openDataPanel('city'); renderCustomPkg(); validateCpkgField('cpkg-venue-location')">
+                    <option value="" disabled selected>Select a city (or pin on map)</option>
+                    <option value="Manila">Manila</option>
+                    <option value="Quezon City">Quezon City</option>
+                    <option value="Caloocan">Caloocan</option>
+                    <option value="Las Pi&#241;as">Las Pi&#241;as</option>
+                    <option value="Makati">Makati</option>
+                    <option value="Malabon">Malabon</option>
+                    <option value="Mandaluyong">Mandaluyong</option>
+                    <option value="Marikina">Marikina</option>
+                    <option value="Muntinlupa">Muntinlupa</option>
+                    <option value="Navotas">Navotas</option>
+                    <option value="Para&#241;aque">Para&#241;aque</option>
+                    <option value="Pasay">Pasay</option>
+                    <option value="Pasig">Pasig</option>
+                    <option value="San Juan">San Juan</option>
+                    <option value="Taguig">Taguig</option>
+                    <option value="Valenzuela">Valenzuela</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div id="cpkg-vip-fields"
+              style="display:none; margin-bottom:12px; padding:12px; background:rgba(212,175,55,0.05); border:1px dashed var(--gold); border-radius:10px;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <div class="cpkg-field" style="margin-bottom:0;">
+                  <label>How many VIPs?</label>
+                  <input type="number" id="cpkg-vip-count" oninput="validateCpkgField('cpkg-vip-count'); if(typeof renderCustomPkg==='function') renderCustomPkg();" data-required="true" data-rule="Please specify VIP count." class="cpkg-input" placeholder="e.g. 10" min="1" />
+                </div>
+                <div class="cpkg-field" style="margin-bottom:0;">
+                  <label>Service Type</label>
+                  <select id="cpkg-vip-service" class="cpkg-input">
+                    <option value="properly catered">Properly Catered</option>
+                    <option value="plated">Plated</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="cpkg-field" style="position:relative;">
+              <label for="cpkg-venue">Venue / Location &nbsp;<span class="cpkg-map-link" onclick="openMapModal()">Open Map</span></label>
+              <input type="text" id="cpkg-venue" class="cpkg-input" placeholder="Click 'Open Map' to pin your venue..."
+                data-required="true" data-rule="Please pin your venue on the map."
+                onclick="openMapModal()" onfocus="openDataPanel('venue')" onblur="closeDataPanelDelay()" readonly
+                style="cursor:pointer;" />
+            </div>
+          </div>
+
+          <!-- Preferred Meeting Times Section -->
+          <div class="cpkg-section">
+            <div class="cpkg-section-lbl"> Preferred Meeting Times (Finalization)</div>
+            <p style="font-size:13px; color:var(--text-dim); margin-bottom:12px; line-height:1.5;">
+              Finally, you must select a time for our designated meeting for the finalization of your reservation. Once you have submitted your reservation, you will be semi-approved and the dates you selected will be booked for your reservation momentarily. However, failure to attend the designated meeting will result in your reservation being automatically cancelled
+            </p>
+            <div id="meeting-times-list" class="mt-list-container"></div>
+            <button class="btn-primary"
+              style="display:none; width:100%; justify-content:center; padding:12px; font-size:13px; font-weight:700; border-radius:10px; border:none; box-shadow: 0 4px 12px rgba(196,154,60,0.2);"
+              id="cpkg-add-meeting-btn" onclick="openMeetingTimeModal()">
+              + Add Preferred Meeting Time
+            </button>
+            <div style="margin-top:10px; padding:12px; background:rgba(212,175,55,0.1); border-radius:8px; border:1px solid var(--gold);">
+              <p style="font-size:12px; color:var(--text); margin:0; line-height:1.5;">
+                <strong>Important:</strong> Please ensure you are completely free during your proposed times. If the admin is unavailable, we will suggest a different slot.
+              </p>
+            </div>
+          </div>
+
+        </div><!-- /cpkg-form -->
+
+
+
+        <!-- SELECTED ITEMS PANEL -->
+        <div class="cpkg-selected-items-view" id="cpkg-selected-items-view">
+          <div class="cpkg-view-hdr">
+            <button class="btn-back-to-form" onclick="toggleSelectedItemsView()">&#8592; Back to Details</button>
+            <div class="cpkg-view-title">Selected Items</div>
+          </div>
+          <div class="cpkg-category-group" data-cat="food">
+            <div class="cpkg-cat-hdr"> Food Items <span class="cpkg-req-tag">Required</span></div>
+            <div class="cpkg-cat-list" id="cpkg-list-food"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="drink">
+            <div class="cpkg-cat-hdr"> Drink Items <span class="cpkg-req-tag">Required</span></div>
+            <div class="cpkg-cat-list" id="cpkg-list-drink"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="dessert">
+            <div class="cpkg-cat-hdr"> Dessert Items</div>
+            <div class="cpkg-cat-list" id="cpkg-list-dessert"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="equipment">
+            <div class="cpkg-cat-hdr"> Equipments &amp; Decor</div>
+            <div class="cpkg-cat-list" id="cpkg-list-equipment"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="fun">
+            <div class="cpkg-cat-hdr"> Add-ons</div>
+            <div class="cpkg-cat-list" id="cpkg-list-fun"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="addons">
+            <div class="cpkg-cat-hdr"> Add-ons (e.g. Photo)</div>
+            <div class="cpkg-cat-list" id="cpkg-list-addons"></div>
+          </div>
+          <div class="cpkg-category-group" data-cat="free">
+            <div class="cpkg-cat-hdr" style="color:var(--primary); background:rgba(212,175,55,0.1);"> Included Free Items</div>
+            <div class="cpkg-cat-list" id="cpkg-list-free"></div>
+          </div>
+          <div class="cpkg-total-container" id="cpkg-total-container" style="display:flex; flex-direction:column; padding:10px 0 0; border-top:1px solid var(--border);">
+            <div class="cpkg-total-row" style="display:flex; justify-content:space-between; align-items:center; width:100%; border:none; padding:0;">
+              <span class="cpkg-total-lbl">Package Subtotal</span>
+              <span class="cpkg-total-amt" id="cpkg-total">&#8369;0</span>
+            </div>
+            <div id="cpkg-out-of-town-row" style="font-size:11px; margin-top:4px; font-weight:600; display:none; width:100%;"></div>
+            <div id="cpkg-equipment-subtotal-row" style="font-size:11px; margin-top:3px; color:var(--gold); font-weight:600; display:none; width:100%;"></div>
+            <div id="cpkg-additional-charges-row" style="font-size:11px; margin-top:6px; color:var(--gold); font-weight:600; display:none; border-top:1px dashed rgba(196,154,60,0.3); padding-top:6px; width:100%;"></div>
+          </div>
+        </div>
+
+        <!-- TOGGLE HIDE BUTTON (Visible when details/summary are open) -->
+        <div id="cpkg-bottom-hide-btn" style="text-align:center; padding:10px 5px; cursor:pointer; color:var(--primary); font-size:16px; background:var(--bg2); display:none;" onclick="toggleCpkgBottom(false)">
+          &#9650;
+          <div style="font-size:11px; font-family:sans-serif; margin-top:2px;">click me if you want to see the details you inputted</div>
+        </div>
+
+        <div id="cpkg-bottom-wrapper" style="display:none;">
+          <!-- VIEW SELECTED ITEMS TOGGLE -->
+          <div class="cpkg-items-toggle-section">
+            <button class="btn-view-items" id="btn-view-items" onclick="toggleSelectedItemsView()">
+              View Selected Items
+              <span class="cpkg-count-badge" id="cpkg-count">0</span>
+            </button>
+          </div>
+
+          <!-- FOOTER: Estimated Total & Finalize Button -->
+          <div class="cpkg-footer">
+            <div class="cpkg-bottom-price-box" style="flex-direction:column; align-items:stretch;">
+              <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <div class="cpkg-price-lbl">Estimated Package Total</div>
+                <div class="cpkg-price-highlight" id="cpkg-price-summary">&#8369;0</div>
+              </div>
+              <div id="cpkg-out-of-town-summary-note" style="display:none; font-size:11px; font-weight:600; color:var(--text, #000); margin-top:8px; padding-top:8px; border-top:1px dashed var(--border); text-align:right;"></div>
+            </div>
+            <button class="btn-finalize" onclick="finalizePackage()">Finalize Package &amp; Add to Cart &#8594;</button>
+          </div>
+        </div>
+
+        <!-- TOGGLE SHOW BUTTON (Visible when details/summary are collapsed) -->
+        <div id="cpkg-bottom-show-btn" style="text-align:center; padding:10px 5px; cursor:pointer; color:var(--primary); font-size:16px; background:var(--bg2);" onclick="toggleCpkgBottom(true)">
+          &#9660;
+          <div style="font-size:11px; font-family:sans-serif; margin-top:2px;">click me once you have inputted all the details</div>
+        </div>
+
+  </div><!-- /cpkg-panel -->
+
+  <!-- RIGHT: Catalog Panel (items to add to package) -->
+  
+  <!-- RIGHT: DATA INSIGHTS PANEL (Hidden by Default) -->
+  <div class="data-panel" id="data-panel" onclick="closeDataPanel()" style="cursor:pointer; display:none; flex-direction:column; flex:1; background:var(--warm-white); border-left:1px solid var(--border); padding-right:90px; overflow-y:auto;">
+    <div class="data-top" style="padding:24px 24px 10px;">
+      <div class="data-title-row">
+        <div class="data-icon"></div>
+        <div>
+          <div class="data-title" id="data-title">Past Trends &amp; Insights</div>
+          <div class="data-subtitle" id="data-subtitle">Hover over inputs to learn more</div>
+        </div>
+      </div>
+    </div>
+    <div class="data-body" style="padding:0 24px 24px;">
+      <div class="chart-container" style="position: relative; height:40vh; width:100%">
+        <canvas id="insight-chart"></canvas>
+      </div>
+      <div id="data-insight-text" class="data-insight-text"></div>
+    </div>
+    <div style="text-align:center; padding: 10px 0 24px; font-size:12px; font-weight:600; color:var(--gold); opacity:0.75; letter-spacing:0.5px;">
+      &#10005; Click anywhere here to close
+    </div>
+  </div>
+
+  <div class="cwo-catalog-side" id="cat-panel">
+    <div class="cpkg-catalog-inner">
+      <div class="ai-banner" id="ai-banner">
+        <div class="aib-icon"></div>
+        <div class="aib-text">
+          <strong id="aib-title">AI Recommendations Active</strong>
+          <span id="aib-desc">Highlighted items match your event.</span>
+        </div>
+        <button class="aib-clear" onclick="clearFilter()">Clear</button>
+      </div>
+      <div class="cat-top" style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div class="cat-count" id="cat-count" style="flex:0 0 auto;"><strong>All items</strong></div>
+        <div style="flex:1 1 200px; text-align:center; font-size:12px; font-weight:500; color:var(--text-mid, #666); padding:0 10px; min-width: 250px;">
+          Please select the items you want to add in your package in our menu, food and drink items are required. Enjoy browsing our catalog and ask the AI planner for any of your inqueries!
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; flex:0 0 auto;">
+          <button class="btn-ask-ai" onclick="askAiAdviceDetail()">Ask AI</button>
+          <button class="btn-cpkg-clear" onclick="openResetConfirmModal()">Clear Package</button>
+        </div>
+      </div>
+      <div class="custom-search-container">
+        <div id="free-choice-note" style="display:none; background:var(--gold); color:#1a1612; padding:12px 16px; border-radius:8px; font-weight:600; font-size:13px; margin-bottom:15px; text-align:center;">
+          You are able to select one meal item of your choice from the menu per the pre-made package.
+        </div>
+        <div class="search-bar-wrap">
+          <input type="text" class="search-input" placeholder="Search catalog..."
+            oninput="onCustomSearch(this.value)">
+          <span class="search-icon"></span>
+        </div>
+      </div>
+      <div class="cat-filters" id="fbtns">
+        <button class="fb active" onclick="setCat('all',this)">All</button>
+        <button class="fb" onclick="setCat('food',this)"> Food</button>
+        <button class="fb" onclick="setCat('dessert',this)"> Desserts</button>
+        <button class="fb" onclick="setCat('drink',this)"> Drinks</button>
+        <button class="fb" onclick="setCat('special',this)"> Special Items</button>
+        <button class="fb" onclick="setCat('decoration',this)"> Decor</button>
+        <button class="fb" onclick="setCat('equipment',this)"> Equipment</button>
+        <button class="fb" onclick="setCat('entertainment',this)"> Add-ons</button>
+      </div>
+      <div class="cat-grid" id="cat-grid"></div>
+      <div class="cat-pagination-wrap" id="cat-pagination"></div>
+    </div>
+  </div><!-- /cwo-catalog-side -->
+
+</div><!-- /custom-workspace-overlay -->
+
+
+<!-- CUSTOM EVENT DATE CALENDAR MODAL (MAKE A RESERVATION) -->
+<div id="custom-event-date-backdrop" class="custom-event-cal-backdrop" onclick="closeCustomEventDateCalendarModal()" style="display:none;"></div>
+<div id="custom-event-date-modal" class="custom-event-cal-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="custom-cal-month-year">
+  <div class="custom-cal-header">
+    <div class="custom-cal-nav-left">
+      <button type="button" class="btn-cal-arrow" id="btn-custom-cal-prev" onclick="navCustomEventCalendar(-1)" title="Previous Month">&lt;</button>
+    </div>
+    <div class="custom-cal-title" id="custom-cal-month-year" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+      <select id="custom-cal-month-select" class="custom-cal-select custom-cal-month-select" onchange="onCustomCalSelectChange()" aria-label="Select month">
+        <option value="0">January</option>
+        <option value="1">February</option>
+        <option value="2">March</option>
+        <option value="3">April</option>
+        <option value="4">May</option>
+        <option value="5">June</option>
+        <option value="6">July</option>
+        <option value="7">August</option>
+        <option value="8">September</option>
+        <option value="9" selected>October</option>
+        <option value="10">November</option>
+        <option value="11">December</option>
+      </select>
+      <select id="custom-cal-year-select" class="custom-cal-select custom-cal-year-select" onchange="onCustomCalSelectChange()" aria-label="Select year">
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+        <option value="2029">2029</option>
+        <option value="2030">2030</option>
+        <option value="2031">2031</option>
+        <option value="2032">2032</option>
+        <option value="2033">2033</option>
+        <option value="2034">2034</option>
+        <option value="2035">2035</option>
+        <option value="2036">2036</option>
+        <option value="2037">2037</option>
+        <option value="2038">2038</option>
+        <option value="2039">2039</option>
+        <option value="2040">2040</option>
+        <option value="2041">2041</option>
+        <option value="2042">2042</option>
+        <option value="2043">2043</option>
+        <option value="2044">2044</option>
+        <option value="2045">2045</option>
+        <option value="2046">2046</option>
+        <option value="2047">2047</option>
+        <option value="2048">2048</option>
+        <option value="2049">2049</option>
+        <option value="2050">2050</option>
+        <option value="2051">2051</option>
+        <option value="2052">2052</option>
+        <option value="2053">2053</option>
+        <option value="2054">2054</option>
+        <option value="2055">2055</option>
+        <option value="2056">2056</option>
+        <option value="2057">2057</option>
+        <option value="2058">2058</option>
+        <option value="2059">2059</option>
+        <option value="2060">2060</option>
+        <option value="2061">2061</option>
+        <option value="2062">2062</option>
+        <option value="2063">2063</option>
+        <option value="2064">2064</option>
+        <option value="2065">2065</option>
+        <option value="2066">2066</option>
+        <option value="2067">2067</option>
+        <option value="2068">2068</option>
+        <option value="2069">2069</option>
+        <option value="2070">2070</option>
+        <option value="2071">2071</option>
+        <option value="2072">2072</option>
+        <option value="2073">2073</option>
+        <option value="2074">2074</option>
+        <option value="2075">2075</option>
+        <option value="2076">2076</option>
+      </select>
+    </div>
+    <div class="custom-cal-nav-right">
+      <button type="button" class="btn-cal-arrow" id="btn-custom-cal-next" onclick="navCustomEventCalendar(1)" title="Next Month">&gt;</button>
+      <button type="button" class="btn-cal-close" onclick="closeCustomEventDateCalendarModal()" title="Close">&times;</button>
+    </div>
+  </div>
+
+  <div class="custom-cal-notice-banner">
+    We can serve up to 3 reservations per day, so don't hesitate to book your reservation on a day that has other events!!
+  </div>
+
+  <div class="custom-cal-legend">
+    <span class="cal-leg-item"><span class="cal-leg-dot leg-avail"></span> Available</span>
+    <span class="cal-leg-item"><span class="cal-leg-dot leg-booked"></span> Has Events (1-2)</span>
+    <span class="cal-leg-item"><span class="cal-leg-dot leg-full"></span> Locked (3/3 Full)</span>
+    <span class="cal-leg-item"><span class="cal-leg-dot leg-disabled"></span> Unavailable</span>
+  </div>
+
+  <div class="custom-cal-days-header">
+    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+  </div>
+
+  <div class="custom-cal-grid" id="custom-cal-days-grid">
+    <!-- Populated dynamically by app.js -->
+  </div>
+</div>
+
+</body>
+</html>
